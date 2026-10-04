@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Leer Afrikaans">
+<meta name="theme-color" content="#2F6B4F">
+<title>Leer Afrikaans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F6F2;--surface:#FFFFFF;--ink:#1C2540;--muted:#5F6785;--line:#DADFE8;
+  --brand:#2F6B4F;--brand-soft:#DCEBE3;--accent:#D93A74;--sun:#F0A92E;--good:#2F7D4F;--good-bg:#DDF0E4;--bad:#B8383B;--bad-bg:#F8E0E0;
+  --display:'Fraunces',Georgia,'Times New Roman',serif;--body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  box-sizing:border-box;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#111729;--surface:#1B2440;--ink:#EEF1F8;--muted:#A2ABC8;--line:#2C3658;--brand:#5BB887;--brand-soft:#1F3A33;--accent:#F06A98;--good:#6CCB92;--good-bg:#1B3A2E;--bad:#F08A8C;--bad-bg:#432326}
+}
+:root[data-theme="dark"]{--bg:#111729;--surface:#1B2440;--ink:#EEF1F8;--muted:#A2ABC8;--line:#2C3658;--brand:#5BB887;--brand-soft:#1F3A33;--accent:#F06A98;--good:#6CCB92;--good-bg:#1B3A2E;--bad:#F08A8C;--bad-bg:#432326}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%}
+body{min-height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#app{max-width:520px;margin:0 auto;padding:16px 18px 110px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;font-weight:800}
+h2{font-size:1.5rem;margin:26px 0 4px}
+h3{font-size:1.1rem}
+p{margin:0 0 10px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.top{display:flex;justify-content:space-between;align-items:center;padding:6px 0 14px}
+.pills{display:flex;gap:8px}
+.pill{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:800;font-size:.92rem}
+.primary{display:block;width:100%;background:var(--brand);color:#fff;font-weight:800;padding:15px 18px;border-radius:14px;text-align:center;font-size:1.05rem}
+:root[data-theme="dark"] .primary,.dark-primary{color:#0E1A15}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .primary{color:#0E1A15}}
+.secondary{display:block;width:100%;border:2px solid var(--line);background:var(--surface);font-weight:800;padding:13px 18px;border-radius:14px;text-align:center}
+.ghost{color:var(--muted);font-weight:800;padding:8px 4px}
+.next{background:var(--brand);color:#fff;border-radius:20px;padding:20px 20px 18px;margin:4px 0 6px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .next{color:#0E1A15}}
+:root[data-theme="dark"] .next{color:#0E1A15}
+.next h1{font-size:2rem}
+.next .btn{margin-top:14px;background:#fff;color:#1C2540;font-weight:800;padding:12px 18px;border-radius:12px;display:inline-block}
+.welcome input{width:100%;font:inherit;padding:13px 14px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);margin:10px 0}
+.lvl{margin-top:26px}
+.lvl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.path{list-style:none;margin:12px 0 0;padding:0 0 0 22px;position:relative}
+.path::before{content:"";position:absolute;left:21px;top:20px;bottom:20px;width:3px;background:var(--line);border-radius:3px}
+.path li{position:relative}
+.lrow{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:9px 0}
+.node{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.25rem;background:var(--surface);border:3px solid var(--line);position:relative;z-index:1;margin-left:-22px}
+.node.done{background:var(--brand-soft);border-color:var(--brand)}
+.node.up{background:var(--accent);border-color:var(--accent)}
+.lt{font-weight:800}
+.ls{font-size:.85rem;color:var(--muted)}
+.star{color:var(--sun);letter-spacing:1px}
+.test{margin:8px 0 0 22px;display:block;font-weight:800;color:var(--brand);padding:6px 0}
+.reviewbox{border:2px dashed var(--line);border-radius:16px;padding:14px 16px;margin-top:16px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1.5px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav.tabs div{max-width:520px;margin:0 auto;display:flex}
+nav.tabs button{flex:1;padding:11px 0 10px;font-weight:800;font-size:.82rem;color:var(--muted)}
+nav.tabs button span{display:block;font-size:1.35rem;line-height:1.2}
+nav.tabs button.on{color:var(--brand)}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);border-radius:6px;transition:width .3s}
+.qtop{display:flex;align-items:center;gap:12px;padding:6px 0 18px}
+.qtop .bar{flex:1}
+.label{color:var(--muted);font-weight:800;margin-bottom:8px}
+.prompt{font-family:var(--display);font-size:2.3rem;font-weight:800;line-height:1.1;margin:6px 0 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.prompt.en{font-size:1.9rem}
+.spk{flex:none;width:48px;height:48px;border-radius:50%;background:var(--brand-soft);font-size:1.2rem;display:inline-grid;place-items:center}
+.spk.slow{width:40px;height:40px;font-size:1rem}
+.opts{display:grid;gap:10px}
+.opt{width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-weight:700}
+.opt.good{border-color:var(--good);background:var(--good-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt:disabled{cursor:default}
+.tin{width:100%;font:inherit;font-size:1.2rem;padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.chars{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 16px}
+.chars button{min-width:40px;padding:8px 0;border-radius:10px;background:var(--surface);border:2px solid var(--line);font-weight:800}
+.mt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mt .opt{text-align:center;padding:14px 8px;font-size:.98rem}
+.mt .opt.sel{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 2px var(--accent) inset}
+.mt .opt.gone{opacity:.35;border-color:var(--good)}
+.mt .opt.shake{border-color:var(--bad);background:var(--bad-bg)}
+.fb{position:fixed;left:0;right:0;bottom:0;padding:16px 18px calc(16px + env(safe-area-inset-bottom,0px));z-index:6}
+.fb>div{max-width:520px;margin:0 auto}
+.fb.good{background:var(--good-bg)}.fb.bad{background:var(--bad-bg)}
+.fb strong{font-family:var(--display);font-size:1.25rem;display:block}
+.fb p{margin:2px 0 12px}
+.micbtn{width:84px;height:84px;border-radius:50%;background:var(--accent);color:#fff;font-size:2rem;display:grid;place-items:center;margin:8px auto 4px}
+.micbtn.live{animation:pulse 1.1s infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.micbtn.live{animation:none}.bar i{transition:none}}
+.card{background:var(--brand);color:#fff;border-radius:22px;padding:34px 22px;text-align:center;margin:8px 0 18px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card{color:#0E1A15}}
+:root[data-theme="dark"] .card{color:#0E1A15}
+.card .af{font-family:var(--display);font-size:2.6rem;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
+.card .en{font-size:1.15rem;margin-top:10px;opacity:.92}
+.card .spk{background:rgba(255,255,255,.9);color:#1C2540;margin:18px 6px 0}
+.tips{list-style:none;padding:0;margin:14px 0 22px}
+.tips li{padding:12px 0 12px 16px;border-left:4px solid var(--accent);margin-bottom:12px;background:var(--surface);border-radius:0 12px 12px 0;padding-right:14px}
+.big{font-family:var(--display);font-size:3.4rem;font-weight:800;line-height:1}
+.hero{text-align:center;padding:24px 0 10px}
+.stars{font-size:2.4rem;color:var(--sun);letter-spacing:4px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.stat{border-top:3px solid var(--line);padding-top:8px}
+.stat b{font-family:var(--display);font-size:1.7rem;display:block}
+.wl{list-style:none;padding:0;margin:8px 0}
+.wl li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.dots{letter-spacing:2px;color:var(--brand)}
+.set label{display:block;font-weight:800;margin:14px 0 4px}
+.set input,.set select{width:100%;font:inherit;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.set .secondary,.set .primary{margin-top:10px}
+.note{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.warn{border-color:var(--sun)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="application/json" id="data">
+{
+"levels":[
+ {"id":"beginner","name":"Beginner","blurb":"First words and everyday basics"},
+ {"id":"elementary","name":"Elementary","blurb":"Short sentences about your life"},
+ {"id":"intermediate","name":"Intermediate","blurb":"Past tense, questions and real-life talk"}
+],
+"lessons":[
+ {"id":"greetings","level":"beginner","title":"Greetings","emoji":"👋",
+  "tips":["Afrikaans is spelled much like it sounds, once you learn a few letters.","The letter g is a throaty sound, like the ch in Scottish loch. It is in goeie (roughly KHOO-yuh).","Môre has a little hat on the o. It just makes the vowel longer.","Add baie (very) to make thanks bigger: baie dankie."],
+  "items":[["Hallo","Hello"],["Goeie môre","Good morning"],["Goeie middag","Good afternoon"],["Goeie naand","Good evening"],["Totsiens","Goodbye"],["Dankie","Thank you"],["Baie dankie","Thank you very much"],["Asseblief","Please"],["Ja","Yes"],["Nee","No"],["Hoe gaan dit?","How are you?"],["Dit gaan goed, dankie","I'm well, thank you"]]},
+ {"id":"intro","level":"beginner","title":"Meeting people","emoji":"🤝","tips":["Here is good news: Afrikaans verbs do not change with the person. It is ek is, jy is, hy is, ons is, and so on.","Jy is the friendly you. Use it with friends and people your age.","The letter j sounds like English y, so ja is pronounced like yah."],
+  "items":[["Wat is jou naam?","What is your name?"],["My naam is Anna","My name is Anna"],["Ek is Anna","I am Anna"],["Aangename kennis","Pleased to meet you"],["Ek","I"],["Jy","You"],["Jammer","Sorry"],["Verskoon my","Excuse me"],["Ek verstaan nie","I don't understand"],["Praat jy Engels?","Do you speak English?"],["Ek praat 'n bietjie Afrikaans","I speak a little Afrikaans"],["Kan jy dit herhaal?","Can you repeat that?"]]},
+ {"id":"numbers","level":"beginner","title":"Numbers 0 to 10","emoji":"🔢","tips":["The letter v sounds like English f. So vier is like feer and vyf is like fayf.","The letter w sounds like English v. So water is said like vaa-ter.","The word sewe has two syllables: SEE-vuh."],
+  "items":[["Nul","Zero (0)"],["Een","One (1)"],["Twee","Two (2)"],["Drie","Three (3)"],["Vier","Four (4)"],["Vyf","Five (5)"],["Ses","Six (6)"],["Sewe","Seven (7)"],["Agt","Eight (8)"],["Nege","Nine (9)"],["Tien","Ten (10)"],["Ek het twee katte","I have two cats"]]},
+ {"id":"farm","level":"beginner","title":"Farm animals","emoji":"🐄","tips":["Die means the, and it is used for every noun. No masculine or feminine to memorise.","'n means a or an. It is said like a quick uh.","To make a plural you usually add -e or -s: hond becomes honde, but eend becomes eende."],
+  "items":[["koei","cow"],["skaap","sheep"],["bok","goat"],["hoender","chicken"],["hond","dog"],["kat","cat"],["perd","horse"],["vark","pig"],["eend","duck"],["haan","rooster"],["plaas","farm"],["Die koei is groot","The cow is big"],["Die hond blaf","The dog barks"],["Die hoender lê eiers","The chicken lays eggs"]]},
+ {"id":"colours","level":"beginner","title":"Colours","emoji":"🎨","tips":["As in English, the colour goes before the noun: die rooi bal, the red ball.","The sound oe is like oo in moon. Groen is roughly KHROON.","Ek hou van means I like. It is a great phrase to learn early."],
+  "items":[["rooi","red"],["blou","blue"],["groen","green"],["geel","yellow"],["swart","black"],["wit","white"],["oranje","orange"],["bruin","brown"],["pienk","pink"],["Die lug is blou","The sky is blue"],["Die gras is groen","The grass is green"],["Ek hou van rooi","I like red"]]},
+ {"id":"food","level":"beginner","title":"Food and drink","emoji":"🍞","tips":["Lekker is one of the most useful Afrikaans words. It means tasty, nice or great.","Dis is a short way to say dit is (it is).","Use asseblief at the end of an order to be polite."],
+  "items":[["water","water"],["melk","milk"],["brood","bread"],["kaas","cheese"],["eier","egg"],["vleis","meat"],["koffie","coffee"],["tee","tea"],["appel","apple"],["rys","rice"],["'n Koppie koffie, asseblief","A cup of coffee, please"],["Ek is honger","I am hungry"],["Ek is dors","I am thirsty"],["Dis lekker","It's tasty"]]},
+ {"id":"family","level":"elementary","title":"Family","emoji":"👨‍👩‍👧","tips":["Possessives are simple: my (my), jou (your), sy (his), haar (her), ons (our).","Ma and pa are used just like mom and dad.","Ek het means I have. It is also used later for the past tense."],
+  "items":[["ma","mom"],["pa","dad"],["broer","brother"],["suster","sister"],["oupa","grandfather"],["ouma","grandmother"],["seun","son"],["dogter","daughter"],["man","husband / man"],["vrou","wife / woman"],["kind","child"],["vriend","friend"],["Dit is my ma","This is my mom"],["Ek het 'n broer","I have a brother"],["Sy het twee susters","She has two sisters"]]},
+ {"id":"days","level":"elementary","title":"Days and time","emoji":"📅","tips":["Days of the week start with a capital letter in Afrikaans.","Dag means day, and every weekday ends in -dag except Vrydag and Saterdag.","Hoe laat is dit? literally means How late is it? and is the normal way to ask the time."],
+  "items":[["Maandag","Monday"],["Dinsdag","Tuesday"],["Woensdag","Wednesday"],["Donderdag","Thursday"],["Vrydag","Friday"],["Saterdag","Saturday"],["Sondag","Sunday"],["vandag","today"],["môre","tomorrow"],["gister","yesterday"],["Tot môre","See you tomorrow"],["Hoe laat is dit?","What time is it?"],["Dit is drie uur","It is three o'clock"]]},
+ {"id":"town","level":"elementary","title":"Getting around","emoji":"🧭","tips":["Question words come first: Waar is... ? means Where is... ?","Hoeveel kos dit? is your shopping survival phrase.","Kan jy my help? is a polite way to ask for help."],
+  "items":[["links","left"],["regs","right"],["reguit","straight ahead"],["winkel","shop"],["straat","street"],["stasie","station"],["Waar is die toilet?","Where is the toilet?"],["Hoeveel kos dit?","How much does it cost?"],["Ek is verlore","I am lost"],["Kan jy my help?","Can you help me?"],["Is dit ver?","Is it far?"],["Dit is naby","It is nearby"]]},
+ {"id":"verbs","level":"elementary","title":"Everyday actions","emoji":"🏃","tips":["Verbs never change with the person: ek eet, jy eet, hy eet, ons eet.","Word order is like English for simple sentences: Ek eet brood (I eat bread).","Leer means both learn and teach, so context helps."],
+  "items":[["eet","eat"],["drink","drink"],["loop","walk"],["praat","speak"],["slaap","sleep"],["werk","work"],["lees","read"],["skryf","write"],["leer","learn"],["kyk","look / watch"],["Ek eet brood","I eat bread"],["Hy drink water","He drinks water"],["Sy lees 'n boek","She reads a book"],["Ek leer Afrikaans","I am learning Afrikaans"]]},
+ {"id":"weather","level":"intermediate","title":"Weather and seasons","emoji":"☀️","tips":["Dit is used for it, as in Dit reën (It rains).","The ee in reën is a long vowel, and the two dots just tell you to say the vowels separately.","South Africa's seasons are flipped from the northern hemisphere: December is summer."],
+  "items":[["son","sun"],["reën","rain"],["wind","wind"],["wolk","cloud"],["warm","warm"],["koud","cold"],["somer","summer"],["winter","winter"],["Dit reën","It is raining"],["Die son skyn","The sun is shining"],["Dit is warm vandag","It is warm today"],["Dit is baie koud","It is very cold"]]},
+ {"id":"feelings","level":"intermediate","title":"Feelings and opinions","emoji":"😊","tips":["Baie (very) goes before the word: baie bly, very happy.","Hoe voel jy? is how you ask how someone feels, not just how they are.","Ek hou van... is I like... and the thing you like comes after it."],
+  "items":[["bly","happy"],["hartseer","sad"],["moeg","tired"],["bang","scared"],["kwaad","angry"],["siek","sick"],["Hoe voel jy?","How do you feel?"],["Ek is moeg","I am tired"],["Ek is baie bly","I am very happy"],["Ek is bly om jou te sien","I am glad to see you"],["Ek hou van koffie","I like coffee"]]},
+ {"id":"past","level":"intermediate","title":"The past tense","emoji":"⏪","tips":["The past is easy: use het plus the verb with ge- in front. Ek het gewerk, I worked.","Sometimes ge- goes before the verb stem: leer becomes geleer, kyk becomes gekyk.","Eet is a special one: ek het geëet, I ate."],
+  "items":[["Ek het gewerk","I worked"],["Ek het koffie gedrink","I drank coffee"],["Sy het brood geëet","She ate bread"],["Ons het gepraat","We talked"],["Hy het baie geslaap","He slept a lot"],["Ek het jou gesien","I saw you"],["Het jy geëet?","Did you eat?"],["Ek het gister gewerk","I worked yesterday"],["Ek het Afrikaans geleer","I learned Afrikaans"],["Hulle het gekyk","They watched"],["gisteraand","last night"]]},
+ {"id":"questions","level":"intermediate","title":"Questions and no","emoji":"❓","tips":["Afrikaans has a famous double nie: Ek is nie honger nie. The second nie goes at the end of the sentence.","With a simple verb, one nie at the end is enough: Ek weet nie.","Hoekom is why, and wanneer is when."],
+  "items":[["Wie?","Who?"],["Wat?","What?"],["Waar?","Where?"],["Wanneer?","When?"],["Hoekom?","Why?"],["Hoe?","How?"],["Hoeveel?","How much / how many?"],["Ek weet nie","I don't know"],["Ek is nie honger nie","I am not hungry"],["Ek het nie tyd nie","I don't have time"],["Ek hou nie van reën nie","I don't like rain"],["Wat doen jy?","What are you doing?"]]},
+ {"id":"local","level":"intermediate","title":"Local flavour","emoji":"🔥","tips":["These are words you will hear in everyday South African life.","Ja-nee is a classic: it can mean yes, no, or just I hear you.","Nou-nou means soon, in a little while, not right now."],
+  "items":[["braai","barbecue"],["boerewors","farmer's sausage"],["lekker","nice / great"],["Eina!","Ouch!"],["Ag nee!","Oh no!"],["sommer","just / simply"],["Nou-nou","In a little while"],["Ja-nee","Yeah, well..."],["Lekker slaap","Sleep well"],["Gesondheid!","Cheers! / Bless you!"]]}
+]
+}
+</script>
+
+<script>
+(function(){
+'use strict';
+const D=JSON.parse(document.getElementById('data').textContent);
+const LEVELS=D.levels,LESSONS=D.lessons;
+const ALL=[];const seen=new Set();
+LESSONS.forEach(l=>l.items.forEach(it=>{if(!seen.has(it[0])){seen.add(it[0]);ALL.push(it)}}));
+const BYAF={};ALL.forEach(it=>BYAF[it[0]]=it);
+
+/* ---------- helpers ---------- */
+const app=document.getElementById('app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const slug=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const sample=(a,n)=>shuffle(a).slice(0,n);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function lev(a,b){const m=[];for(let i=0;i<=a.length;i++){m[i]=[i]}for(let j=1;j<=b.length;j++)m[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length]}
+const sim=(a,b)=>{a=norm(a);b=norm(b);const L=Math.max(a.length,b.length)||1;return 1-lev(a,b)/L};
+const today=()=>new Date().toLocaleDateString('en-CA');
+const yesterday=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toLocaleDateString('en-CA')};
+
+/* ---------- state / memory ---------- */
+const KEY='leer-afrikaans-v1';
+const blank=()=>({name:'',xp:0,streak:0,best:0,lastDay:'',lessons:{},tests:{},words:{},rate:.85,gh:{token:'',gist:''},updated:0});
+let S;try{S=Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=blank()}
+S.gh=S.gh||{token:'',gist:''};
+let pushTimer=null;
+function save(){S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function word(af){return S.words[af]||(S.words[af]={s:0})}
+const learned=()=>Object.keys(S.words).filter(k=>BYAF[k]);
+const lessonBest=id=>(S.lessons[id]&&S.lessons[id].best)||0;
+const nextLesson=()=>LESSONS.find(l=>lessonBest(l.id)<60)||null;
+const stars=p=>p>=90?3:p>=70?2:p>=50?1:0;
+const level=()=>Math.floor(S.xp/200)+1;
+const TITLES=['Nuweling','Leerder','Student','Vlot'];
+const titleFor=()=>TITLES[Math.min(3,Math.floor((level()-1)/2))];
+const TITLE_EN={Nuweling:'Newcomer',Leerder:'Learner',Student:'Student',Vlot:'Fluent-ish'};
+
+/* ---------- GitHub gist sync ---------- */
+const FILE='afrikaans-progress.json';
+function payload(){const c=JSON.parse(JSON.stringify(S));delete c.gh;return JSON.stringify(c,null,1)}
+async function gh(path,opt){const r=await fetch('https://api.github.com'+path,Object.assign({headers:{'Authorization':'Bearer '+S.gh.token,'Accept':'application/vnd.github+json'}},opt));if(!r.ok)throw new Error('GitHub said '+r.status);return r.json()}
+async function push(){
+  if(!S.gh.token)return 'Add a GitHub token first.';
+  try{
+    const files={};files[FILE]={content:payload()};
+    if(S.gh.gist){await gh('/gists/'+S.gh.gist,{method:'PATCH',body:JSON.stringify({files})})}
+    else{const g=await gh('/gists',{method:'POST',body:JSON.stringify({description:'Leer Afrikaans progress',public:false,files})});S.gh.gist=g.id;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    return 'Saved to GitHub.';
+  }catch(e){return 'Could not save: '+e.message}
+}
+async function pull(){
+  if(!S.gh.token||!S.gh.gist)return 'Add your token and gist ID first.';
+  try{
+    const g=await gh('/gists/'+S.gh.gist);const f=g.files[FILE];if(!f)return 'No progress file found in that gist.';
+    const remote=JSON.parse(f.content);const keep=S.gh;S=Object.assign(blank(),remote);S.gh=keep;save();return 'Loaded your progress from GitHub.';
+  }catch(e){return 'Could not load: '+e.message}
+}
+function schedulePush(){if(!S.gh.token)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>{push()},1500)}
+
+/* ---------- audio ---------- */
+let HAS=new Set();
+fetch('audio/index.json').then(r=>r.ok?r.json():[]).then(a=>{HAS=new Set(a);if(V.name==='settings')render()}).catch(()=>{});
+let curAudio=null;
+function afVoice(){if(!('speechSynthesis' in window))return null;const vs=speechSynthesis.getVoices();return vs.find(v=>/^af/i.test(v.lang))||null}
+function nlVoice(){if(!('speechSynthesis' in window))return null;return speechSynthesis.getVoices().find(v=>/^nl/i.test(v.lang))||null}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=()=>{if(V.name==='settings')render()}}
+function speak(text,slow){
+  const s=slug(text);
+  try{if(curAudio){curAudio.pause();curAudio=null}}catch(e){}
+  if(HAS.has(s)){const a=new Audio('audio/'+s+'.mp3');a.playbackRate=slow?.7:1;curAudio=a;a.play().catch(()=>{});return}
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  const v=afVoice()||nlVoice();
+  if(v){u.voice=v;u.lang=v.lang}else u.lang='af-ZA';
+  u.rate=slow?.55:S.rate;
+  speechSynthesis.speak(u);
+}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function listenOnce(cb){
+  if(!SR)return cb(null,'unsupported');
+  let done=false;const fin=(a,e)=>{if(!done){done=true;cb(a,e)}};
+  try{
+    const r=new SR();r.lang='af-ZA';r.interimResults=false;r.maxAlternatives=3;
+    r.onresult=e=>fin([...e.results[0]].map(x=>x.transcript));
+    r.onerror=e=>fin(null,e.error);
+    r.onend=()=>fin(null,'no-speech');
+    r.start();
+  }catch(e){fin(null,'unsupported')}
+}
+
+/* ---------- views ---------- */
+let V={name:'home'};      // current screen
+let L=null;               // lesson card state
+let Q=null;               // quiz state
+
+const spk=(t,slow)=>`<button class="spk ${slow?'slow':''}" data-act="say" ${slow?'data-slow="1"':''} data-say="${esc(t)}" aria-label="${slow?'Play slowly':'Play audio'}">${slow?'🐢':'🔊'}</button>`;
+
+function homeView(){
+  const nx=nextLesson();const lrn=learned();
+  const weak=lrn.filter(k=>S.words[k].s<=2);
+  let h=`<div class="top"><div><div class="muted small">${S.name?'Welkom terug,':'Welkom!'}</div><h1 style="font-size:1.6rem">${esc(S.name||'Leer Afrikaans')}</h1></div>
+   <div class="pills"><span class="pill" title="Day streak">🔥 ${S.streak}</span><span class="pill" title="XP">⭐ ${S.xp}</span></div></div>`;
+  if(!S.name){
+    h+=`<div class="welcome note"><h3>What should I call you?</h3><input id="nm" placeholder="Your name" autocomplete="given-name"><button class="primary" data-act="setname">Start learning</button></div>`;
+  }
+  if(nx){
+    const first=!Object.keys(S.lessons).length;
+    h+=`<div class="next"><div class="small">${first?'Start here':'Up next'}</div><h1>${nx.emoji} ${esc(nx.title)}</h1>
+     <button class="btn" data-act="open" data-id="${nx.id}">${first?'Begin lesson':'Continue'}</button></div>`;
+  }else{
+    h+=`<div class="next"><h1>Jy het alles klaar! 🎉</h1><p>You've passed every lesson. Retake any lesson or test to keep your words fresh.</p></div>`;
+  }
+  if(lrn.length>=4){
+    h+=`<div class="reviewbox"><h3>Practice weak words</h3><p class="muted small" style="margin:2px 0 10px">${weak.length?weak.length+' words could use another look.':'Everything feels solid. A quick refresher never hurts.'}</p><button class="secondary" data-act="review">Start practice</button></div>`;
+  }
+  LEVELS.forEach(lv=>{
+    const ls=LESSONS.filter(l=>l.level===lv.id);
+    const t=S.tests[lv.id];
+    h+=`<section class="lvl"><div class="lvl-head"><h2 style="margin:0">${lv.name}</h2><span class="muted small">${ls.filter(l=>lessonBest(l.id)>=60).length}/${ls.length} done</span></div><div class="muted small">${lv.blurb}</div><ul class="path">`;
+    ls.forEach(l=>{
+      const b=lessonBest(l.id),done=b>=60,isNext=nx&&nx.id===l.id;
+      h+=`<li><button class="lrow" data-act="open" data-id="${l.id}"><span class="node ${done?'done':isNext?'up':''}">${done?'✓':l.emoji}</span><span><span class="lt">${esc(l.title)}</span><br><span class="ls">${l.items.length} words and phrases${S.lessons[l.id]?' · <span class="star">'+'★'.repeat(stars(b))+'☆'.repeat(3-stars(b))+'</span> '+b+'%':''}</span></span></button></li>`;
+    });
+    h+=`</ul><button class="test" data-act="test" data-id="${lv.id}">Take the ${lv.name} test${t?' · best '+t.best+'%':''}</button></section>`;
+  });
+  return h;
+}
+
+function learnView(){
+  const l=L.lesson,n=l.items.length;
+  if(L.i<0){
+    return `<div class="qtop"><button class="ghost" data-act="home" aria-label="Back">✕</button><h3>${l.emoji} ${esc(l.title)}</h3></div>
+     <p class="label">Before you start</p><ul class="tips">${l.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+     <button class="primary" data-act="lnext">Meet the words</button>
+     ${lessonBest(l.id)?'<button class="ghost" style="width:100%;margin-top:6px" data-act="lquiz">Skip to the quiz</button>':''}`;
+  }
+  const it=l.items[L.i];
+  return `<div class="qtop"><button class="ghost" data-act="home" aria-label="Close">✕</button><div class="bar"><i style="width:${Math.round((L.i)/n*100)}%"></i></div><span class="muted small">${L.i+1}/${n}</span></div>
+   <div class="card"><div class="af">${esc(it[0])}</div><div class="en">${esc(it[1])}</div>${spk(it[0])}${spk(it[0],true)}</div>
+   <div class="row"><button class="secondary" style="flex:1" data-act="lback" ${L.i===0?'disabled':''}>Back</button><button class="primary" style="flex:2" data-act="lnext">${L.i===n-1?'Start the quiz':'Next word'}</button></div>`;
+}
+
+function distract(correct,idx,pool){
+  const out=[];const seenv=new Set([correct]);
+  for(const it of shuffle(pool).concat(shuffle(ALL))){const v=it[idx];if(!seenv.has(v)){seenv.add(v);out.push(v)}if(out.length===3)break}
+  return out;
+}
+
+function quizView(){
+  const q=Q.queue[Q.i],fb=Q.fb;
+  const pct=Math.round(Q.i/Q.queue.length*100);
+  let h=`<div class="qtop"><button class="ghost" data-act="home" aria-label="Quit">✕</button><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  if(q.t==='mc'||q.t==='listen'){
+    const af2en=q.t==='listen'||q.dir==='af2en';const idx=af2en?1:0;
+    q.ans=q.item[idx];
+    if(!q.opts)q.opts=shuffle([q.ans,...distract(q.ans,idx,Q.session.items)]);
+    if(q.t==='listen'){h+=`<p class="label">Listen, then pick the meaning</p><div class="prompt">${spk(q.item[0])}${spk(q.item[0],true)}</div>`}
+    else if(af2en){h+=`<p class="label">What does this mean?</p><div class="prompt">${esc(q.item[0])} ${spk(q.item[0])}</div>`}
+    else{h+=`<p class="label">How do you say…</p><div class="prompt en">${esc(q.item[1])}</div>`}
+    h+=`<div class="opts">${q.opts.map((o,i)=>`<button class="opt ${fb?(o===q.ans?'good':i===q.picked?'bad':''):''}" data-act="opt" data-i="${i}" ${fb?'disabled':''}>${esc(o)}</button>`).join('')}</div>`;
+  }else if(q.t==='type'){
+    h+=`<p class="label">Type it in Afrikaans</p><div class="prompt en">${esc(q.item[1])}</div>
+     <input id="ti" class="tin" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your answer" value="${esc(q.val||'')}" ${fb?'disabled':''}>
+     ${fb?'':`<div class="chars">${['ê','ë','é','è','ô','î','ï','û'].map(c=>`<button data-act="ch" data-c="${c}" tabindex="-1">${c}</button>`).join('')}</div><button class="primary" data-act="check">Check</button>`}`;
+  }else if(q.t==='match'){
+    if(!q.m)q.m={L:shuffle(q.items.map((_,i)=>i)),R:shuffle(q.items.map((_,i)=>i)),sel:null,done:[],err:0,bad:null};
+    const m=q.m;
+    const cls=(side,i)=>{if(m.done.includes(i))return 'gone';if(m.bad&&m.bad.some(b=>b.side===side&&b.i===i))return 'shake';if(m.sel&&m.sel.side===side&&m.sel.i===i)return 'sel';return ''};
+    h+=`<p class="label">Match each word with its meaning</p><div class="mt"><div class="opts">${m.L.map(i=>`<button class="opt ${cls('L',i)}" data-act="mt" data-side="L" data-i="${i}" ${m.done.includes(i)||fb?'disabled':''}>${esc(q.items[i][0])}</button>`).join('')}</div><div class="opts">${m.R.map(i=>`<button class="opt ${cls('R',i)}" data-act="mt" data-side="R" data-i="${i}" ${m.done.includes(i)||fb?'disabled':''}>${esc(q.items[i][1])}</button>`).join('')}</div></div>`;
+  }else if(q.t==='speak'){
+    const sp=q.sp||{s:'idle'};
+    h+=`<p class="label">Say it out loud</p><div class="prompt">${esc(q.item[0])}</div><div class="row" style="margin:-10px 0 14px">${spk(q.item[0])}${spk(q.item[0],true)}<span class="muted">${esc(q.item[1])}</span></div>`;
+    if(fb){}
+    else if(sp.s==='unsup'||!SR){
+      h+=`<div class="note">${sp.s==='unsup'?'Speech recognition isn\'t available for Afrikaans on this device or browser.':'This browser can\'t listen to Afrikaans.'} Play the word, say it aloud, and rate yourself.</div><button class="primary" data-act="selfok">I said it</button><button class="ghost" style="width:100%" data-act="skip">Skip</button>`;
+    }else{
+      h+=`<button class="micbtn ${sp.s==='listening'?'live':''}" data-act="mic" aria-label="Start listening">🎤</button><p style="text-align:center" class="muted">${sp.s==='listening'?'Listening…':sp.s==='miss'?'I heard “'+esc(sp.heard)+'”. Give it another go.':sp.s==='quiet'?'I didn\'t hear anything. Tap and try again.':'Tap the mic and say it'}</p>${sp.s==='miss'||sp.s==='quiet'?'<button class="ghost" style="width:100%" data-act="skip">Move on</button>':''}`;
+    }
+  }
+  if(fb){
+    h+=`<div class="fb ${fb.ok?'good':'bad'}"><div><strong>${fb.ok?fb.praise:'Not quite'}</strong><p>${fb.note||''}</p><button class="primary" data-act="next">Continue</button></div></div>`;
+  }
+  return h;
+}
+
+function doneView(){
+  const d=Q.done;
+  const msg=d.pct>=90?'Uitstekend! Excellent work. These words are really sticking.':d.pct>=70?'Baie goed! Very good. A little more practice and it will be second nature.':d.pct>=50?'Goed so! Good going. Retake it to lock in the tricky ones.':'Moenie moed opgee nie. Don\'t give up. Every slip-up is how words stick, so try it again whenever you\'re ready.';
+  const nxt=Q.session.kind==='lesson'&&d.pct>=60?LESSONS[LESSONS.findIndex(l=>l.id===Q.session.id)+1]:null;
+  const weak=[...Q.weak];
+  return `<div class="hero"><div class="stars">${'★'.repeat(stars(d.pct))}${'☆'.repeat(3-stars(d.pct))}</div><div class="big">${d.pct}%</div><h2 style="margin-top:8px">${esc(Q.session.title)}</h2><p>${msg}</p>
+   <p class="muted">+${d.xp} XP · 🔥 ${S.streak}-day streak${d.pct>=60&&Q.session.kind==='lesson'&&!d.was?' · Lesson complete!':''}</p></div>
+   ${weak.length?`<h3>Worth another look</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b><br><span class="muted small">${esc(BYAF[a]?BYAF[a][1]:'')}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
+   <div style="margin-top:18px;display:grid;gap:10px">
+   ${nxt?`<button class="primary" data-act="open" data-id="${nxt.id}">Next: ${esc(nxt.title)}</button>`:''}
+   <button class="${nxt?'secondary':'primary'}" data-act="retake">Retake</button>
+   <button class="secondary" data-act="home">Back to lessons</button></div>`;
+}
+
+function profileView(){
+  const lrn=learned(),mast=lrn.filter(k=>S.words[k].s>=4);
+  const into=S.xp%200;
+  const weak=lrn.filter(k=>S.words[k].s<=2).sort((a,b)=>S.words[a].s-S.words[b].s).slice(0,8);
+  const strong=lrn.filter(k=>S.words[k].s>=4).slice(0,6);
+  return `<div class="top"><h1 style="font-size:1.6rem">Profile</h1></div>
+   <div class="hero" style="padding-top:0"><div class="muted small">Level ${level()}</div><h2 style="margin:0">${esc(S.name||'Learner')}</h2><div>${titleFor()} <span class="muted small">(${TITLE_EN[titleFor()]})</span></div>
+   <div class="bar" style="margin:14px 0 4px"><i style="width:${into/2}%"></i></div><div class="muted small">${200-into} XP to level ${level()+1}</div></div>
+   <div class="stats"><div class="stat"><b>${S.streak}</b>day streak</div><div class="stat"><b>${S.best}</b>best streak</div><div class="stat"><b>${lrn.length}</b>words met (of ${ALL.length})</div><div class="stat"><b>${mast.length}</b>words mastered</div><div class="stat"><b>${LESSONS.filter(l=>lessonBest(l.id)>=60).length}</b>lessons passed (of ${LESSONS.length})</div><div class="stat"><b>${S.xp}</b>total XP</div></div>
+   <p>${encourage()}</p>
+   ${weak.length?`<h3>Words to practise</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
+   ${strong.length?`<h3 style="margin-top:18px">Words you know well</h3><ul class="wl">${strong.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span><span class="dots">●●●●●</span></li>`).join('')}</ul>`:''}`;
+}
+function encourage(){
+  const n=nextLesson();
+  if(!Object.keys(S.lessons).length)return 'Your first lesson takes about five minutes. Groete is a great place to begin.';
+  if(S.streak>=7)return `${S.streak} days in a row. Dis wonderlik! Consistency is what makes a language stick.`;
+  if(S.streak>=3)return `${S.streak} days in a row, mooi so! Keep the streak going with a short lesson today.`;
+  return n?`You're getting there. Up next: ${n.title}.`:'You have passed every lesson. Use the practice mode to keep it all fresh.';
+}
+
+function settingsView(){
+  const av=afVoice(),nv=nlVoice();
+  const vt=HAS.size?`Using ${HAS.size} recorded audio files, with the device voice as backup.`:av?`Using your device's Afrikaans voice (${esc(av.name)}).`:nv?'No Afrikaans voice on this device, so a Dutch voice is standing in. It is close but not identical. Adding audio files fixes this (see the README).':'No suitable voice found on this device. Add audio files to hear pronunciations (see the README).';
+  return `<div class="top"><h1 style="font-size:1.6rem">Settings</h1></div><div class="set">
+   <div class="note ${HAS.size||av?'':'warn'}"><b>Voice</b><br><span class="small">${vt}</span></div>
+   <label for="rate">Speaking speed</label><select id="rate" data-bind="rate"><option value="0.7" ${S.rate==0.7?'selected':''}>Slow</option><option value="0.85" ${S.rate==0.85?'selected':''}>Normal</option><option value="1" ${S.rate==1?'selected':''}>Fast</option></select>
+   <label for="nm2">Your name</label><input id="nm2" data-bind="name" value="${esc(S.name)}">
+   <h3 style="margin-top:28px">Save progress to GitHub</h3>
+   <p class="muted small">Your progress always saves on this device. Add a GitHub token (a classic token with only the “gist” permission) and it will also back up to a private gist, so you can restore it on any device.</p>
+   <label for="tok">GitHub token</label><input id="tok" type="password" data-bind="gh.token" value="${esc(S.gh.token)}" autocomplete="off" placeholder="ghp_...">
+   <label for="gid">Gist ID (filled in after the first save)</label><input id="gid" data-bind="gh.gist" value="${esc(S.gh.gist)}" autocomplete="off">
+   <button class="primary" data-act="gpush">Save to GitHub now</button><button class="secondary" data-act="gpull">Load from GitHub</button>
+   ${V.msg?`<div class="note">${esc(V.msg)}</div>`:''}
+   <h3 style="margin-top:28px">Backup file</h3>
+   <button class="secondary" data-act="export">Download backup</button>
+   <label for="imp">Restore from backup</label><input id="imp" type="file" accept="application/json">
+   <h3 style="margin-top:28px">Start over</h3>
+   <button class="secondary" data-act="reset" style="color:var(--bad)">Erase all progress</button></div>`;
+}
+
+function render(){
+  let h='';
+  switch(V.name){
+    case 'home':h=homeView();break;
+    case 'learn':h=learnView();break;
+    case 'quiz':h=quizView();break;
+    case 'done':h=doneView();break;
+    case 'profile':h=profileView();break;
+    case 'settings':h=settingsView();break;
+  }
+  const nav=['home','profile','settings'].includes(V.name)?`<nav class="tabs"><div>
+    <button class="${V.name==='home'?'on':''}" data-act="tab" data-t="home"><span>📚</span>Learn</button>
+    <button class="${V.name==='profile'?'on':''}" data-act="tab" data-t="profile"><span>🏅</span>Profile</button>
+    <button class="${V.name==='settings'?'on':''}" data-act="tab" data-t="settings"><span>⚙️</span>Settings</button></div></nav>`:'';
+  app.innerHTML=h+nav;
+  window.scrollTo(0,0);
+  if(V.name==='quiz'&&!Q.fb){const q=Q.queue[Q.i];if(q.t==='listen'&&!q.played){q.played=1;speak(q.item[0])}if(q.t==='type'){const i=document.getElementById('ti');if(i)i.focus()}}
+}
+
+/* ---------- quiz engine ---------- */
+function build(session){
+  const items=shuffle(session.items);const out=[];
+  if(session.kind==='lesson'){
+    items.forEach((it,i)=>out.push({t:'mc',item:it,dir:i%2?'en2af':'af2en'}));
+    sample(items,3).forEach(it=>out.push({t:'listen',item:it}));
+    sample(items,3).forEach(it=>out.push({t:'type',item:it}));
+    if(items.length>=5)out.push({t:'match',items:sample(items,5)});
+    const ph=items.filter(i=>i[0].includes(' '));
+    sample(ph.length>=2?ph:items,2).forEach(it=>out.push({t:'speak',item:it}));
+  }else{
+    const n=Math.min(items.length,session.kind==='test'?12:10);
+    const types=['mc','listen','type','mc','listen'];
+    items.slice(0,n).forEach((it,i)=>{const t=types[i%types.length];out.push(t==='mc'?{t,item:it,dir:i%2?'en2af':'af2en'}:{t,item:it})});
+    if(items.length>=5)out.push({t:'match',items:sample(items,5)});
+  }
+  return out;
+}
+function startSession(session){
+  const queue=build(session);
+  Q={session,queue,i:0,right:0,total:queue.length,weak:new Set(),fb:null,done:null};
+  V={name:'quiz'};render();
+}
+function bump(q,ok){
+  const items=q.t==='match'?q.items:[q.item];
+  items.forEach(it=>{const w=word(it[0]);w.s=Math.max(0,Math.min(5,w.s+(ok?1:-1)))});
+}
+const PRAISE=['Reg!','Mooi so!','Presies!','Goed gedoen!','Lekker!'];
+function answer(ok,note){
+  const q=Q.queue[Q.i];
+  if(!q.retry){
+    if(ok)Q.right++;
+    bump(q,ok);
+    if(!ok&&q.t!=='speak'){
+      if(q.t!=='match')Q.weak.add(q.item[0]);
+      Q.queue.push(Object.assign({},q,{retry:true,opts:null,picked:null,m:null,sp:null,val:'',played:false}));
+    }
+  }
+  Q.fb={ok,note:note||'',praise:pick(PRAISE)};
+  if(q.t!=='match'&&q.item&&(!ok||q.t==='listen'||q.t==='type'||q.t==='speak'))speak(q.item[0]);
+  save();render();
+}
+function advance(){
+  Q.fb=null;Q.i++;
+  if(Q.i>=Q.queue.length)finish();else render();
+}
+function finish(){
+  const pct=Math.round(Q.right/Math.max(1,Q.total)*100);
+  const xp=Q.right*10+(pct>=60?20:0);
+  S.xp+=xp;
+  if(S.lastDay!==today()){S.streak=S.lastDay===yesterday()?S.streak+1:1;S.lastDay=today()}
+  S.best=Math.max(S.best,S.streak);
+  const s=Q.session;let was=false;
+  if(s.kind==='lesson'){const r=S.lessons[s.id]||{best:0,attempts:0};was=r.best>=60;r.best=Math.max(r.best,pct);r.attempts++;S.lessons[s.id]=r}
+  if(s.kind==='test'){const r=S.tests[s.id]||{best:0};r.best=Math.max(r.best,pct);S.tests[s.id]=r}
+  Q.done={pct,xp,was};
+  save();schedulePush();
+  V={name:'done'};render();
+}
+
+/* ---------- actions ---------- */
+const ACT={
+  say:t=>speak(t.dataset.say,t.dataset.slow==='1'),
+  tab:t=>{V={name:t.dataset.t};render()},
+  home:()=>{Q=null;L=null;V={name:'home'};render()},
+  setname:()=>{const v=document.getElementById('nm').value.trim();if(!v)return;S.name=v;save();render()},
+  open:t=>{const l=LESSONS.find(x=>x.id===t.dataset.id);L={lesson:l,i:-1};V={name:'learn'};render()},
+  lback:()=>{if(L.i>0){L.i--;render();speak(L.lesson.items[L.i][0])}},
+  lnext:()=>{
+    const n=L.lesson.items.length;
+    if(L.i>=0&&L.i===n-1){ACT.lquiz();return}
+    L.i++;const it=L.lesson.items[L.i];word(it[0]);save();render();speak(it[0]);
+  },
+  lquiz:()=>{L.lesson.items.forEach(it=>word(it[0]));save();startSession({kind:'lesson',id:L.lesson.id,title:L.lesson.title,items:L.lesson.items})},
+  test:t=>{const lv=LEVELS.find(x=>x.id===t.dataset.id);const items=[];LESSONS.filter(l=>l.level===lv.id).forEach(l=>l.items.forEach(i=>items.push(i)));startSession({kind:'test',id:lv.id,title:lv.name+' test',items})},
+  review:()=>{
+    const ks=learned().sort((a,b)=>S.words[a].s-S.words[b].s||Math.random()-.5).slice(0,12);
+    startSession({kind:'review',id:'review',title:'Practice',items:ks.map(k=>BYAF[k])});
+  },
+  retake:()=>startSession(Q.session),
+  opt:t=>{
+    if(Q.fb)return;const q=Q.queue[Q.i];const i=+t.dataset.i;q.picked=i;
+    const ok=q.opts[i]===q.ans;
+    answer(ok,ok?'':'Answer: <b>'+esc(q.ans)+'</b>'+(q.t==='mc'&&q.dir==='en2af'?'':'')+(q.item?'<br><span class="small">'+esc(q.item[0])+' = '+esc(q.item[1])+'</span>':'')+'<br><span class="small">We\'ll try this one again.</span>');
+  },
+  ch:t=>{const i=document.getElementById('ti');if(!i)return;const s=i.selectionStart,e=i.selectionEnd;i.setRangeText(t.dataset.c,s,e,'end');i.focus()},
+  check:()=>{
+    if(Q.fb)return;const q=Q.queue[Q.i];const i=document.getElementById('ti');q.val=i.value;if(!norm(q.val))return;
+    const ok=norm(q.val)===norm(q.item[0]);
+    let note='';
+    if(ok&&q.val.trim().toLowerCase()!==q.item[0].toLowerCase())note='Spelled with accents it is <b>'+esc(q.item[0])+'</b>.';
+    if(!ok)note='Answer: <b>'+esc(q.item[0])+'</b><br><span class="small">We\'ll try this one again.</span>';
+    answer(ok,note);
+  },
+  mt:t=>{
+    const q=Q.queue[Q.i],m=q.m;if(Q.fb||m.bad)return;
+    const side=t.dataset.side,i=+t.dataset.i;
+    if(!m.sel||m.sel.side===side){m.sel={side,i};speak_if_left(q,side,i);render();return}
+    const a=m.sel;m.sel=null;
+    if(a.i===i){m.done.push(i);speak(q.items[i][0]);
+      if(m.done.length===q.items.length){answer(m.err<=1,m.err?m.err+(m.err===1?' slip':' slips')+' along the way.':'No slips. Lovely!');return}
+      render();
+    }else{m.err++;m.bad=[a,{side,i}];render();setTimeout(()=>{m.bad=null;if(Q&&Q.queue[Q.i]===q)render()},550)}
+  },
+  mic:()=>{
+    const q=Q.queue[Q.i];if(Q.fb||(q.sp&&q.sp.s==='listening'))return;
+    q.sp={s:'listening'};render();
+    listenOnce((alts,err)=>{
+      if(!Q||Q.queue[Q.i]!==q||Q.fb)return;
+      if(err){q.sp={s:(err==='no-speech'||err==='aborted')?'quiet':'unsup'};render();return}
+      const best=alts.reduce((a,b)=>sim(a,q.item[0])>=sim(b,q.item[0])?a:b);
+      if(sim(best,q.item[0])>=.72){answer(true,'I heard “'+esc(best)+'”. Great pronunciation!')}
+      else{q.sp={s:'miss',heard:best};render()}
+    });
+  },
+  selfok:()=>answer(true,'Saying it aloud is the best practice there is.'),
+  skip:()=>{Q.total--;if(Q.total<1)Q.total=1;advance()},
+  next:()=>advance(),
+  gpush:async()=>{V.msg='Saving…';render();V.msg=await push();render()},
+  gpull:async()=>{V.msg='Loading…';render();V.msg=await pull();render()},
+  export:()=>{const b=new Blob([payload()],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='afrikaans-progress.json';a.click()},
+  reset:()=>{if(confirm('Erase all progress on this device? This cannot be undone.')){const g=S.gh;S=blank();S.gh=g;save();V={name:'home'};render()}}
+};
+function speak_if_left(q,side,i){if(side==='L')speak(q.items[i][0])}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=ACT[t.dataset.act];if(f)f(t,e)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ti')ACT.check()});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='imp'&&t.files[0]){
+    t.files[0].text().then(x=>{try{const r=JSON.parse(x);const g=S.gh;S=Object.assign(blank(),r);S.gh=g;save();V={name:'home'};render()}catch(err){V.msg='That file could not be read.';render()}});return;
+  }
+  const b=t.dataset&&t.dataset.bind;if(!b)return;
+  let v=t.value;if(b==='rate')v=parseFloat(v);
+  if(b.startsWith('gh.'))S.gh[b.slice(3)]=v.trim();else S[b]=v;
+  save();
+});
+render();
+})();
+</script>
+</body>
+</html>
