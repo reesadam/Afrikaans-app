@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Leer Afrikaans">
 <meta name="theme-color" content="#2F6B4F">
@@ -22,7 +22,7 @@
   :root:not([data-theme="light"]){--bg:#111729;--surface:#1B2440;--ink:#EEF1F8;--muted:#A2ABC8;--line:#2C3658;--brand:#5BB887;--brand-soft:#1F3A33;--accent:#F06A98;--good:#6CCB92;--good-bg:#1B3A2E;--bad:#F08A8C;--bad-bg:#432326;--on-brand:#0E1A15}
 }
 :root[data-theme="dark"]{--bg:#111729;--surface:#1B2440;--ink:#EEF1F8;--muted:#A2ABC8;--line:#2C3658;--brand:#5BB887;--brand-soft:#1F3A33;--accent:#F06A98;--good:#6CCB92;--good-bg:#1B3A2E;--bad:#F08A8C;--bad-bg:#432326;--on-brand:#0E1A15}
-*,*::before,*::after{box-sizing:inherit}
+*,*::before,*::after{box-sizing:inherit;touch-action:manipulation}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%}
 body{min-height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 #app{max-width:520px;margin:0 auto;padding:16px 18px 110px}
@@ -143,6 +143,7 @@ nav.tabs button.on{color:var(--brand)}
 .gm{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 0;border-bottom:1px solid var(--line)}
 .gm .node{margin-left:0}
 .fbspace{height:130px}
+.badge{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;font-size:.68rem;font-style:normal;padding:0 6px;margin-left:4px;vertical-align:middle;line-height:1.5}
 details.ub{margin-top:6px}
 summary.unit{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding:8px 0;border-bottom:2px solid var(--line);font-weight:800;color:var(--brand)}
 summary.unit::-webkit-details-marker{display:none}
@@ -293,9 +294,34 @@ const KEY='leer-afrikaans-v1';
 const blank=()=>({name:'',xp:0,streak:0,best:0,lastDay:'',lessons:{},tests:{},words:{},rate:.85,gh:{token:'',gist:''},updated:0,daily:null,dailyCount:0,speedBest:0});
 let S;try{S=Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=blank()}
 S.gh=S.gh||{token:'',gist:''};
+const DAY=864e5,IV=[0.25,1,2,4,8,16];
+const interval=s=>IV[Math.max(0,Math.min(5,s))]*DAY;
+Object.keys(S.words).forEach(k=>{const w=S.words[k];if(w.due===undefined)w.due=w.s<=2?0:Date.now()+interval(w.s)});
 let pushTimer=null;
 function save(){S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function word(af){return S.words[af]||(S.words[af]={s:0})}
+function word(af){return S.words[af]||(S.words[af]={s:0,due:Date.now()+DAY/2})}
+function grade(af,ok){
+  const w=word(af),t=today();
+  if(ok){
+    if(w.up!==t){w.s=Math.min(5,w.s+1);w.up=t;w.due=Date.now()+interval(w.s)}
+  }else{
+    if(w.dn!==t){w.s=Math.max(0,w.s-1);w.dn=t}
+    w.due=Date.now()+DAY/4;
+  }
+  w.last=Date.now();
+}
+function dueWords(){const now=Date.now();return learned().filter(k=>(S.words[k].due||0)<=now).sort((a,b)=>S.words[a].due-S.words[b].due)}
+function reviewNote(){
+  const n=dueWords().length;
+  if(learned().length<4)return '';
+  return n?`<p class="muted small">🔁 ${n} word${n===1?' is':'s are'} due for review now.</p>`:`<p class="muted small">🔁 Your next words come back for review ${nextDueText()||'soon'}.</p>`;
+}
+function nextDueText(){
+  const ds=learned().map(k=>S.words[k].due).filter(x=>x>Date.now());
+  if(!ds.length)return '';
+  const hrs=(Math.min(...ds)-Date.now())/36e5;
+  return hrs<1?'within the hour':hrs<24?'in about '+Math.ceil(hrs)+' hours':'in about '+Math.ceil(hrs/24)+' day'+(Math.ceil(hrs/24)===1?'':'s');
+}
 const learned=()=>Object.keys(S.words).filter(k=>BYAF[k]);
 const lessonBest=id=>(S.lessons[id]&&S.lessons[id].best)||0;
 const nextLesson=()=>LESSONS.find(l=>lessonBest(l.id)<60)||null;
@@ -370,7 +396,7 @@ function homeView(){
   const nx=nextLesson();const lrn=learned();
   const weak=lrn.filter(k=>S.words[k].s<=2);
   let h=`<div class="top"><div><div class="muted small">${S.name?'Welkom terug,':'Welkom!'}</div><h1 style="font-size:1.6rem">${esc(S.name||'Leer Afrikaans')}</h1></div>
-   <div class="pills"><span class="pill" title="Day streak">🔥 ${S.streak}</span><span class="pill" title="XP">⭐ ${S.xp}</span></div></div>`;
+   <div class="pills">${dueWords().length?`<span class="pill" title="Words due for review">🔁 ${dueWords().length}</span>`:''}<span class="pill" title="Day streak">🔥 ${S.streak}</span><span class="pill" title="XP">⭐ ${S.xp}</span></div></div>`;
   if(!S.name){
     h+=`<div class="welcome note"><h3>What should I call you?</h3><input id="nm" placeholder="Your name" autocomplete="given-name"><button class="primary" data-act="setname">Start learning</button></div>`;
   }
@@ -379,7 +405,7 @@ function homeView(){
     h+=`<div class="next"><div class="small">${first?'Start here':'Up next'}</div><h1>${nx.emoji} ${esc(nx.title)}</h1>
      <button class="btn" data-act="open" data-id="${nx.id}">${first?'Begin lesson':'Continue'}</button></div>`;
   }else{
-    h+=`<div class="next"><h1>Jy het alles klaar! 🎉</h1><p>You've passed every lesson. Retake any lesson or test to keep your words fresh.</p></div>`;
+    h+=`<div class="next"><h1>Jy het alles klaar! 🎉</h1><p>You've passed every lesson. Keep your words fresh with Review, retake lessons and tests, or play the games.</p></div>`;
   }
   if(dailyDone()){
     h+=`<div class="daily done"><div class="row between"><div><h3>📅 Daily challenge done ✓</h3><p class="muted small" style="margin:2px 0 0">You scored ${S.daily.pct}%. A new one arrives tomorrow.</p></div><button class="ghost" data-act="daily">Replay</button></div></div>`;
@@ -387,7 +413,13 @@ function homeView(){
     h+=`<div class="daily"><h3>📅 Daily challenge</h3><p class="muted small" style="margin:2px 0 10px">10 mixed questions, focused on your trickiest words. Pass it for +50 bonus XP.</p><button class="primary" data-act="daily">Start today's challenge</button></div>`;
   }
   if(lrn.length>=4){
-    h+=`<div class="reviewbox"><h3>Practice weak words</h3><p class="muted small" style="margin:2px 0 10px">${weak.length?weak.length+' words could use another look.':'Everything feels solid. A quick refresher never hurts.'}</p><button class="secondary" data-act="review">Start practice</button></div>`;
+    const due=dueWords().length;
+    if(due>0){
+      h+=`<div class="daily"><h3>🔁 Review · ${due} word${due===1?'':'s'} ready</h3><p class="muted small" style="margin:2px 0 10px">Words come back just before you'd forget them, so they stick for good.</p><button class="primary" data-act="review">Start review</button></div>`;
+    }else{
+      const nd=nextDueText();
+      h+=`<div class="reviewbox"><h3>🔁 Review: all caught up ✓</h3><p class="muted small" style="margin:2px 0 10px">${nd?'Your next words are due '+nd+'.':'Nothing is waiting.'} You can still practise your trickiest words now.</p><button class="secondary" data-act="review">Practise anyway</button></div>`;
+    }
   }
   LEVELS.forEach(lv=>{
     const ls=LESSONS.filter(l=>l.level===lv.id);
@@ -548,7 +580,8 @@ function dailyItems(){
     const lrn=learned().map(k=>BYAF[k]);
     let picked;
     if(lrn.length>=6){
-      const weak=lrn.slice().sort((a,b)=>S.words[a[0]].s-S.words[b[0]].s).slice(0,12);
+      const dueL=dueWords().map(k=>BYAF[k]);
+      const weak=dueL.length>=4?dueL:lrn.slice().sort((a,b)=>S.words[a[0]].s-S.words[b[0]].s).slice(0,12);
       picked=sample(weak,6);
       picked=picked.concat(sample(lrn.filter(x=>!picked.includes(x)),4));
     }else picked=sample(ALL,10);
@@ -561,7 +594,9 @@ function dailyItems(){
 /* ---------- games hub + speed round ---------- */
 function gamesView(){
   const n=learned().length;
-  const rows=[['daily','📅','Daily challenge','10 mixed questions, new every day. Pass for +50 XP.',dailyDone()?'Done today ✓':''],
+  const nDue=dueWords().length;
+  const rows=[['review','🔁','Review','Words that are due for spaced practice.',nDue?nDue+' due':''],
+   ['daily','📅','Daily challenge','10 mixed questions, new every day. Pass for +50 XP.',dailyDone()?'Done today ✓':''],
    ['speed','⚡','Speed round','45 seconds. Answer as many as you can.',S.speedBest?'Best: '+S.speedBest:''],
    ['pic','🖼️','Picture challenge','Match the drawings to Afrikaans words.',''],
    ['memory','🃏','Memory match','Flip cards to find word and meaning pairs.',''],
@@ -621,7 +656,7 @@ function doneView(){
   const nxt=Q.session.kind==='lesson'&&d.pct>=60?LESSONS[LESSONS.findIndex(l=>l.id===Q.session.id)+1]:null;
   const weak=[...Q.weak];
   return `<div class="hero"><div class="stars">${'★'.repeat(stars(d.pct))}${'☆'.repeat(3-stars(d.pct))}</div><div class="big">${d.pct}%</div><h2 style="margin-top:8px">${esc(Q.session.title)}</h2><p>${msg}</p>
-   <p class="muted">+${d.xp} XP · 🔥 ${S.streak}-day streak${d.pct>=60&&Q.session.kind==='lesson'&&!d.was?' · Lesson complete!':''}</p>${d.bonus?'<p><b>📅 Daily challenge complete! Includes +50 bonus XP.</b></p>':Q.session.kind==='daily'&&!dailyDone()?'<p class="muted">Score 50% or more to earn the daily bonus. Retake whenever you like.</p>':''}</div>
+   <p class="muted">+${d.xp} XP · 🔥 ${S.streak}-day streak${d.pct>=60&&Q.session.kind==='lesson'&&!d.was?' · Lesson complete!':''}</p>${reviewNote()}${d.bonus?'<p><b>📅 Daily challenge complete! Includes +50 bonus XP.</b></p>':Q.session.kind==='daily'&&!dailyDone()?'<p class="muted">Score 50% or more to earn the daily bonus. Retake whenever you like.</p>':''}</div>
    ${weak.length?`<h3>Worth another look</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b><br><span class="muted small">${esc(BYAF[a]?BYAF[a][1]:'')}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
    <div style="margin-top:18px;display:grid;gap:10px">
    ${nxt?`<button class="primary" data-act="open" data-id="${nxt.id}">Next: ${esc(nxt.title)}</button>`:''}
@@ -637,7 +672,7 @@ function profileView(){
   return `<div class="top"><h1 style="font-size:1.6rem">Profile</h1></div>
    <div class="hero" style="padding-top:0"><div class="muted small">Level ${level()}</div><h2 style="margin:0">${esc(S.name||'Learner')}</h2><div>${titleFor()} <span class="muted small">(${TITLE_EN[titleFor()]})</span></div>
    <div class="bar" style="margin:14px 0 4px"><i style="width:${into/2}%"></i></div><div class="muted small">${200-into} XP to level ${level()+1}</div></div>
-   <div class="stats"><div class="stat"><b>${S.streak}</b>day streak</div><div class="stat"><b>${S.best}</b>best streak</div><div class="stat"><b>${lrn.length}</b>words met (of ${ALL.length})</div><div class="stat"><b>${mast.length}</b>words mastered</div><div class="stat"><b>${LESSONS.filter(l=>lessonBest(l.id)>=60).length}</b>lessons passed (of ${LESSONS.length})</div><div class="stat"><b>${S.xp}</b>total XP</div><div class="stat"><b>${S.dailyCount||0}</b>daily challenges</div><div class="stat"><b>${S.speedBest||0}</b>speed round best</div></div>
+   <div class="stats"><div class="stat"><b>${S.streak}</b>day streak</div><div class="stat"><b>${S.best}</b>best streak</div><div class="stat"><b>${lrn.length}</b>words met (of ${ALL.length})</div><div class="stat"><b>${mast.length}</b>words mastered</div><div class="stat"><b>${LESSONS.filter(l=>lessonBest(l.id)>=60).length}</b>lessons passed (of ${LESSONS.length})</div><div class="stat"><b>${S.xp}</b>total XP</div><div class="stat"><b>${dueWords().length}</b>words due for review</div><div class="stat"><b>${dueWords().length}</b>due for review</div><div class="stat"><b>${S.reviewCount||0}</b>reviews done</div><div class="stat"><b>${S.dailyCount||0}</b>daily challenges</div><div class="stat"><b>${S.speedBest||0}</b>speed round best</div></div>
    <p>${encourage()}</p>
    ${weak.length?`<h3>Words to practise</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
    ${strong.length?`<h3 style="margin-top:18px">Words you know well</h3><ul class="wl">${strong.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span><span class="dots">●●●●●</span></li>`).join('')}</ul>`:''}`;
@@ -677,6 +712,7 @@ function settingsView(){
 let lastKey='';
 function render(){
   if(V.name!=='speed')stopTimer();
+  const NDUE=learned().length>=4?dueWords().length:0;
   let h='';
   switch(V.name){
     case 'home':h=homeView();break;
@@ -690,7 +726,7 @@ function render(){
     case 'speedend':h=speedEndView();break;
   }
   const nav=['home','games','profile','settings'].includes(V.name)?`<nav class="tabs"><div>
-    <button class="${V.name==='home'?'on':''}" data-act="tab" data-t="home"><span>📚</span>Learn</button>
+    <button class="${V.name==='home'?'on':''}" data-act="tab" data-t="home"><span>📚</span>Learn${NDUE?`<i class="badge">${NDUE>99?'99+':NDUE}</i>`:''}</button>
     <button class="${V.name==='games'?'on':''}" data-act="tab" data-t="games"><span>🎮</span>Games</button>
     <button class="${V.name==='profile'?'on':''}" data-act="tab" data-t="profile"><span>🏅</span>Profile</button>
     <button class="${V.name==='settings'?'on':''}" data-act="tab" data-t="settings"><span>⚙️</span>Settings</button></div></nav>`:'';
@@ -748,7 +784,7 @@ function startSession(session){
   V={name:'quiz'};render();
 }
 function bump(q,ok){
-  (q.items||[q.item]).forEach(it=>{const w=word(it[0]);w.s=Math.max(0,Math.min(5,w.s+(ok?1:-1)))});
+  (q.items||[q.item]).forEach(it=>grade(it[0],ok));
 }
 const PRAISE=['Reg!','Mooi so!','Presies!','Goed gedoen!','Lekker!'];
 const SPOKEN=['listen','type','speak','build','spell','dictate','blank'];
@@ -783,6 +819,7 @@ function finish(){
   if(s.kind==='test'){const r=S.tests[s.id]||{best:0};r.best=Math.max(r.best,pct);S.tests[s.id]=r}
   let bonus=0;
   if(s.kind==='daily'&&S.daily&&S.daily.date===today()&&!S.daily.done&&pct>=50){bonus=50;S.xp+=bonus;S.daily.done=true;S.daily.pct=pct;S.dailyCount=(S.dailyCount||0)+1}
+  if(s.kind==='review')S.reviewCount=(S.reviewCount||0)+1;
   Q.done={pct,xp:xp+bonus,was,bonus};
   save();schedulePush();
   V={name:'done'};render();
@@ -810,6 +847,7 @@ const ACT={
     const g=t.dataset.g;
     if(g==='speed')return startSpeed();
     if(g==='daily')return ACT.daily();
+    if(g==='review')return ACT.review();
     const meta={pic:{f:pic,min:5,title:'Picture challenge'},spell:{f:isSpell,min:5,title:'Spelling bee'},build:{f:isPhrase,min:5,title:'Sentence builder'},memory:{f:()=>true,min:8,title:'Memory match'}}[g];
     let pool=learned().map(k=>BYAF[k]).filter(meta.f);
     if(pool.length<meta.min)pool=ALL.filter(meta.f);
@@ -818,7 +856,7 @@ const ACT={
   sopt:t=>{
     if(Date.now()>=G.end){endSpeed();return}
     const i=+t.dataset.i,q=G.q,ok=q.opts[i]===q.ans;
-    const w=word(q.it[0]);w.s=Math.max(0,Math.min(5,w.s+(ok?1:-1)));
+    grade(q.it[0],ok);
     if(ok){G.score++;G.last='✓'}else G.last='✗ '+q.it[0]+' = '+q.it[1];
     nextSpeedQ();render();
   },
@@ -859,8 +897,13 @@ const ACT={
   lquiz:()=>{L.lesson.items.forEach(it=>word(it[0]));save();startSession({kind:'lesson',id:L.lesson.id,title:L.lesson.title,items:L.lesson.items})},
   test:t=>{const lv=LEVELS.find(x=>x.id===t.dataset.id);const items=[];LESSONS.filter(l=>l.level===lv.id).forEach(l=>l.items.forEach(i=>items.push(i)));startSession({kind:'test',id:lv.id,title:lv.name+' test',items})},
   review:()=>{
-    const ks=learned().sort((a,b)=>S.words[a].s-S.words[b].s||Math.random()-.5).slice(0,12);
-    startSession({kind:'review',id:'review',title:'Practice',items:ks.map(k=>BYAF[k])});
+    let ks=dueWords().slice(0,12);
+    if(ks.length<8){
+      const extra=learned().filter(k=>!ks.includes(k)).sort((x,y)=>S.words[x].s-S.words[y].s||Math.random()-.5).slice(0,8-ks.length);
+      ks=ks.concat(extra);
+    }
+    if(ks.length<2)return;
+    startSession({kind:'review',id:'review',title:'Review',items:ks.map(k=>BYAF[k])});
   },
   retake:()=>startSession(Q.session),
   opt:t=>{
@@ -908,6 +951,7 @@ const ACT={
 };
 function speak_if_left(q,side,i){if(side==='L')speak(q.items[i][0])}
 
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=ACT[t.dataset.act];if(f)f(t,e)});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ti')ACT.check()});
 document.addEventListener('change',e=>{
