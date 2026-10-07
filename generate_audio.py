@@ -1,4 +1,4 @@
-"""Generate an mp3 for every Afrikaans word/phrase in index.html (uses Google's Afrikaans voice via gTTS).
+"""Generate an mp3 for every Afrikaans word/phrase in lessons.js (uses Google's Afrikaans voice via gTTS).
 Run: pip install gTTS && python generate_audio.py
 Files land in audio/ and audio/index.json lists them, which the app reads automatically."""
 import json, re, time, unicodedata, pathlib
@@ -9,8 +9,8 @@ def slug(t):
     t = ''.join(c for c in t if not unicodedata.combining(c))
     return re.sub(r'[^a-z0-9]+', '-', t).strip('-')
 
-html = pathlib.Path('index.html').read_text(encoding='utf-8')
-data = json.loads(re.search(r'<script type="application/json" id="data">(.*?)</script>', html, re.S).group(1))
+src = pathlib.Path('lessons.js').read_text(encoding='utf-8')
+data = json.loads(src[src.index('{'):src.rindex('}')+1])
 out = pathlib.Path('audio'); out.mkdir(exist_ok=True)
 slugs = set()
 for lesson in data['lessons']:
