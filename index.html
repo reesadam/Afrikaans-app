@@ -143,6 +143,11 @@ nav.tabs button.on{color:var(--brand)}
 .gm{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 0;border-bottom:1px solid var(--line)}
 .gm .node{margin-left:0}
 .fbspace{height:130px}
+.bd{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);opacity:.75}
+.bd.on{opacity:1}
+.bico{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.5rem;background:var(--brand-soft)}
+.bd:not(.on) .bico{background:var(--line);filter:grayscale(1)}
+.newbadge{background:var(--surface);border:2px solid var(--sun);border-radius:16px;padding:12px 14px;margin:14px 0;text-align:left}
 .badge{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;font-size:.68rem;font-style:normal;padding:0 6px;margin-left:4px;vertical-align:middle;line-height:1.5}
 details.ub{margin-top:6px}
 summary.unit{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding:8px 0;border-bottom:2px solid var(--line);font-weight:800;color:var(--brand)}
@@ -291,7 +296,7 @@ const yesterday=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toLoca
 
 /* ---------- state / memory ---------- */
 const KEY='leer-afrikaans-v1';
-const blank=()=>({name:'',xp:0,streak:0,best:0,lastDay:'',lessons:{},tests:{},words:{},rate:.85,gh:{token:'',gist:''},updated:0,daily:null,dailyCount:0,speedBest:0});
+const blank=()=>({name:'',xp:0,streak:0,best:0,lastDay:'',lessons:{},tests:{},words:{},rate:.85,gh:{token:'',gist:''},updated:0,daily:null,dailyCount:0,speedBest:0,badges:{},perfects:0,reviewCount:0});
 let S;try{S=Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=blank()}
 S.gh=S.gh||{token:'',gist:''};
 const DAY=864e5,IV=[0.25,1,2,4,8,16];
@@ -323,6 +328,56 @@ function nextDueText(){
   return hrs<1?'within the hour':hrs<24?'in about '+Math.ceil(hrs)+' hours':'in about '+Math.ceil(hrs/24)+' day'+(Math.ceil(hrs/24)===1?'':'s');
 }
 const learned=()=>Object.keys(S.words).filter(k=>BYAF[k]);
+
+/* ---------- badges ---------- */
+let NEWB=[];
+const passedN=()=>LESSONS.filter(l=>lessonBest(l.id)>=60).length;
+const lvProg=id=>{const ls=LESSONS.filter(l=>l.level===id);return [ls.filter(l=>lessonBest(l.id)>=60).length,ls.length]};
+const masteredN=()=>learned().filter(k=>S.words[k].s>=4).length;
+const BADGES=[
+ ['first_step','🌱','First Step','Pass your first lesson',()=>[passedN(),1]],
+ ['lessons_10','📚','Bookworm','Pass 10 lessons',()=>[passedN(),10]],
+ ['lessons_30','🎓','Scholar','Pass 30 lessons',()=>[passedN(),30]],
+ ['lessons_all','🏆','Completionist','Pass every lesson',()=>[passedN(),LESSONS.length]],
+ ['tier_beginner','🥉','Beginner Graduate','Pass every Beginner lesson',()=>lvProg('beginner')],
+ ['tier_elementary','🥈','Elementary Graduate','Pass every Elementary lesson',()=>lvProg('elementary')],
+ ['tier_intermediate','🥇','Intermediate Graduate','Pass every Intermediate lesson',()=>lvProg('intermediate')],
+ ['tier_advanced','💎','Advanced Graduate','Pass every Advanced lesson',()=>lvProg('advanced')],
+ ['words_25','🔤','Word Collector','Meet 25 words',()=>[learned().length,25]],
+ ['words_100','💯','Hundred Club','Meet 100 words',()=>[learned().length,100]],
+ ['words_300','✍️','Wordsmith','Meet 300 words',()=>[learned().length,300]],
+ ['words_600','📖','Walking Dictionary','Meet 600 words',()=>[learned().length,600]],
+ ['master_25','⭐','Sticking Power','Master 25 words (they keep coming back right)',()=>[masteredN(),25]],
+ ['master_100','🌟','Memory Master','Master 100 words',()=>[masteredN(),100]],
+ ['perfect','🎯','Bullseye','Score 100% on a lesson or test',()=>[Math.min(1,S.perfects||0),1]],
+ ['perfect_5','🏹','Sharpshooter','Score 100% five times',()=>[S.perfects||0,5]],
+ ['streak_3','🔥','On a Roll','Reach a 3-day streak',()=>[S.best||0,3]],
+ ['streak_7','🗓️','Week Warrior','Reach a 7-day streak',()=>[S.best||0,7]],
+ ['streak_30','🌋','Unstoppable','Reach a 30-day streak',()=>[S.best||0,30]],
+ ['speed_10','⚡','Quick Draw','Score 10 in the speed round',()=>[S.speedBest||0,10]],
+ ['speed_25','🚀','Lightning','Score 25 in the speed round',()=>[S.speedBest||0,25]],
+ ['daily_1','📅','Daily Habit','Complete a daily challenge',()=>[S.dailyCount||0,1]],
+ ['daily_7','📆','Daily Devotion','Complete 7 daily challenges',()=>[S.dailyCount||0,7]],
+ ['review_1','🔁','Second Look','Finish a review session',()=>[S.reviewCount||0,1]],
+ ['review_10','🧠','Never Forget','Finish 10 review sessions',()=>[S.reviewCount||0,10]],
+ ['xp_1000','💫','Rising Star','Earn 1,000 XP',()=>[S.xp,1000]],
+ ['xp_5000','🌠','Superstar','Earn 5,000 XP',()=>[S.xp,5000]]
+];
+function checkBadges(){
+  if(!S.badges)S.badges={};
+  const got=[];
+  BADGES.forEach(b=>{if(!S.badges[b[0]]){const c=b[4]();if(c[0]>=c[1]){S.badges[b[0]]=today();got.push(b)}}});
+  return got;
+}
+const badgeBanner=()=>NEWB.length?`<div class="newbadge"><b>🏅 ${NEWB.length>1?'New badges!':'New badge!'}</b>${NEWB.map(b=>`<div class="row" style="margin-top:8px"><span class="bico">${b[1]}</span><span><b>${esc(b[2])}</b><br><span class="muted small">${esc(b[3])}</span></span></div>`).join('')}</div>`:'';
+function badgesView(){
+  const have=b=>!!(S.badges&&S.badges[b[0]]);
+  const earned=BADGES.filter(have).length;
+  const list=BADGES.slice().sort((a,b)=>(have(b)?1:0)-(have(a)?1:0));
+  return `<div class="top"><button class="ghost" data-act="tab" data-t="profile">‹ Profile</button></div><h1 style="font-size:1.6rem">Badges</h1><p class="muted">${earned} of ${BADGES.length} earned</p>
+   <div>${list.map(b=>{const got=have(b);const c=b[4]();const pc=Math.min(100,Math.round(c[0]/c[1]*100));
+     return `<div class="bd ${got?'on':''}"><span class="bico">${got?b[1]:'🔒'}</span><div style="flex:1"><b>${esc(b[2])}</b><div class="muted small">${esc(b[3])}</div>${got?'':`<div class="bar" style="margin-top:6px;height:7px"><i style="width:${pc}%"></i></div><div class="muted small">${Math.min(c[0],c[1])} / ${c[1]}</div>`}</div></div>`}).join('')}</div>`;
+}
 const lessonBest=id=>(S.lessons[id]&&S.lessons[id].best)||0;
 const nextLesson=()=>LESSONS.find(l=>lessonBest(l.id)<60)||null;
 const stars=p=>p>=90?3:p>=70?2:p>=50?1:0;
@@ -632,7 +687,7 @@ function endSpeed(){
   const xp=G.score*3;S.xp+=xp;
   const newBest=G.score>(S.speedBest||0);
   if(newBest)S.speedBest=G.score;
-  touchStreak();save();schedulePush();
+  touchStreak();NEWB=checkBadges();save();schedulePush();
   V={name:'speedend',xp,newBest};render();
 }
 function speedView(){
@@ -646,7 +701,7 @@ function speedEndView(){
   const best=S.speedBest||0;
   return `<div class="hero"><div class="muted">Time's up!</div><div class="big">${G.score}</div><h2 style="margin-top:8px">${G.score===1?'answer':'answers'}</h2>
    <p>${V.newBest?'Nuwe rekord! A new personal best.':G.score>=15?'Baie goed! Very quick.':'Mooi so! Every round makes you faster.'}</p>
-   <p class="muted">+${V.xp} XP · Best: ${best}</p></div>
+   <p class="muted">+${V.xp} XP · Best: ${best}</p>${badgeBanner()}</div>
    <div style="display:grid;gap:10px"><button class="primary" data-act="game" data-g="speed">Play again</button><button class="secondary" data-act="tab" data-t="games">Back to games</button></div>`;
 }
 
@@ -656,7 +711,7 @@ function doneView(){
   const nxt=Q.session.kind==='lesson'&&d.pct>=60?LESSONS[LESSONS.findIndex(l=>l.id===Q.session.id)+1]:null;
   const weak=[...Q.weak];
   return `<div class="hero"><div class="stars">${'★'.repeat(stars(d.pct))}${'☆'.repeat(3-stars(d.pct))}</div><div class="big">${d.pct}%</div><h2 style="margin-top:8px">${esc(Q.session.title)}</h2><p>${msg}</p>
-   <p class="muted">+${d.xp} XP · 🔥 ${S.streak}-day streak${d.pct>=60&&Q.session.kind==='lesson'&&!d.was?' · Lesson complete!':''}</p>${reviewNote()}${d.bonus?'<p><b>📅 Daily challenge complete! Includes +50 bonus XP.</b></p>':Q.session.kind==='daily'&&!dailyDone()?'<p class="muted">Score 50% or more to earn the daily bonus. Retake whenever you like.</p>':''}</div>
+   <p class="muted">+${d.xp} XP · 🔥 ${S.streak}-day streak${d.pct>=60&&Q.session.kind==='lesson'&&!d.was?' · Lesson complete!':''}</p>${reviewNote()}${badgeBanner()}${d.bonus?'<p><b>📅 Daily challenge complete! Includes +50 bonus XP.</b></p>':Q.session.kind==='daily'&&!dailyDone()?'<p class="muted">Score 50% or more to earn the daily bonus. Retake whenever you like.</p>':''}</div>
    ${weak.length?`<h3>Worth another look</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b><br><span class="muted small">${esc(BYAF[a]?BYAF[a][1]:'')}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
    <div style="margin-top:18px;display:grid;gap:10px">
    ${nxt?`<button class="primary" data-act="open" data-id="${nxt.id}">Next: ${esc(nxt.title)}</button>`:''}
@@ -673,7 +728,8 @@ function profileView(){
    <div class="hero" style="padding-top:0"><div class="muted small">Level ${level()}</div><h2 style="margin:0">${esc(S.name||'Learner')}</h2><div>${titleFor()} <span class="muted small">(${TITLE_EN[titleFor()]})</span></div>
    <div class="bar" style="margin:14px 0 4px"><i style="width:${into/2}%"></i></div><div class="muted small">${200-into} XP to level ${level()+1}</div></div>
    <div class="stats"><div class="stat"><b>${S.streak}</b>day streak</div><div class="stat"><b>${S.best}</b>best streak</div><div class="stat"><b>${lrn.length}</b>words met (of ${ALL.length})</div><div class="stat"><b>${mast.length}</b>words mastered</div><div class="stat"><b>${LESSONS.filter(l=>lessonBest(l.id)>=60).length}</b>lessons passed (of ${LESSONS.length})</div><div class="stat"><b>${S.xp}</b>total XP</div><div class="stat"><b>${dueWords().length}</b>words due for review</div><div class="stat"><b>${dueWords().length}</b>due for review</div><div class="stat"><b>${S.reviewCount||0}</b>reviews done</div><div class="stat"><b>${S.dailyCount||0}</b>daily challenges</div><div class="stat"><b>${S.speedBest||0}</b>speed round best</div></div>
-   <p>${encourage()}</p>
+   <button class="secondary" data-act="tab" data-t="badges">🏅 Badges · ${BADGES.filter(b=>S.badges&&S.badges[b[0]]).length}/${BADGES.length}<br><span style="font-size:1.3rem;letter-spacing:4px">${BADGES.filter(b=>S.badges&&S.badges[b[0]]).slice(-6).map(b=>b[1]).join('')}</span></button>
+   <p style="margin-top:14px">${encourage()}</p>
    ${weak.length?`<h3>Words to practise</h3><ul class="wl">${weak.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span>${spk(a)}</li>`).join('')}</ul>`:''}
    ${strong.length?`<h3 style="margin-top:18px">Words you know well</h3><ul class="wl">${strong.map(a=>`<li><span><b>${esc(a)}</b> <span class="muted small">${esc(BYAF[a][1])}</span></span><span class="dots">●●●●●</span></li>`).join('')}</ul>`:''}`;
 }
@@ -712,6 +768,7 @@ function settingsView(){
 let lastKey='';
 function render(){
   if(V.name!=='speed')stopTimer();
+  if(V.name!=='done'&&V.name!=='speedend')NEWB=[];
   const NDUE=learned().length>=4?dueWords().length:0;
   let h='';
   switch(V.name){
@@ -724,11 +781,12 @@ function render(){
     case 'games':h=gamesView();break;
     case 'speed':h=speedView();break;
     case 'speedend':h=speedEndView();break;
+    case 'badges':h=badgesView();break;
   }
-  const nav=['home','games','profile','settings'].includes(V.name)?`<nav class="tabs"><div>
+  const nav=['home','games','profile','settings','badges'].includes(V.name)?`<nav class="tabs"><div>
     <button class="${V.name==='home'?'on':''}" data-act="tab" data-t="home"><span>📚</span>Learn${NDUE?`<i class="badge">${NDUE>99?'99+':NDUE}</i>`:''}</button>
     <button class="${V.name==='games'?'on':''}" data-act="tab" data-t="games"><span>🎮</span>Games</button>
-    <button class="${V.name==='profile'?'on':''}" data-act="tab" data-t="profile"><span>🏅</span>Profile</button>
+    <button class="${V.name==='profile'||V.name==='badges'?'on':''}" data-act="tab" data-t="profile"><span>🏅</span>Profile</button>
     <button class="${V.name==='settings'?'on':''}" data-act="tab" data-t="settings"><span>⚙️</span>Settings</button></div></nav>`:'';
   app.innerHTML=h+nav;
   const key=V.name+'|'+(V.name==='quiz'?Q.i+':'+Q.queue.length:V.name==='learn'?L.i:'');
@@ -820,7 +878,9 @@ function finish(){
   let bonus=0;
   if(s.kind==='daily'&&S.daily&&S.daily.date===today()&&!S.daily.done&&pct>=50){bonus=50;S.xp+=bonus;S.daily.done=true;S.daily.pct=pct;S.dailyCount=(S.dailyCount||0)+1}
   if(s.kind==='review')S.reviewCount=(S.reviewCount||0)+1;
+  if(pct===100&&(s.kind==='lesson'||s.kind==='test'))S.perfects=(S.perfects||0)+1;
   Q.done={pct,xp:xp+bonus,was,bonus};
+  NEWB=checkBadges();
   save();schedulePush();
   V={name:'done'};render();
 }
