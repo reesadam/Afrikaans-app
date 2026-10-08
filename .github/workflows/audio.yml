@@ -2,7 +2,7 @@ name: Generate audio
 on:
   workflow_dispatch:
   push:
-    paths: ['index.html']
+    paths: ['lessons.js', 'generate_audio.py']
 permissions:
   contents: write
 jobs:
@@ -12,10 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install gTTS
+      - run: pip install -U edge-tts
       - run: python generate_audio.py
       - run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add audio
+          git add -A audio
           git diff --cached --quiet || (git commit -m "Update audio" && git push)
