@@ -168,8 +168,8 @@ async function pull(){
 function schedulePush(){if(!S.gh.token)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>{push()},1500)}
 
 /* ---------- audio ---------- */
-let HAS=new Set();
-fetch('audio/index.json').then(r=>r.ok?r.json():[]).then(a=>{HAS=new Set(a);if(V.name==='settings')render()}).catch(()=>{});
+let HAS=new Set(),AV='';
+fetch('audio/index.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>{const arr=Array.isArray(a);HAS=new Set(arr?a:(a.files||[]));AV=arr?'':(a.v||'');if(V.name==='settings')render()}).catch(()=>{});
 let curAudio=null;
 function afVoice(){if(!('speechSynthesis' in window))return null;const vs=speechSynthesis.getVoices();return vs.find(v=>/^af/i.test(v.lang))||null}
 function nlVoice(){if(!('speechSynthesis' in window))return null;return speechSynthesis.getVoices().find(v=>/^nl/i.test(v.lang))||null}
@@ -177,7 +177,7 @@ if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=()=>{if(V.name==
 function speak(text,slow){
   const s=slug(text);
   try{if(curAudio){curAudio.pause();curAudio=null}}catch(e){}
-  if(HAS.has(s)){const a=new Audio('audio/'+s+'.mp3');a.playbackRate=slow?.7:1;curAudio=a;a.play().catch(()=>{});return}
+  if(HAS.has(s)){const a=new Audio('audio/'+s+'.mp3'+(AV?'?v='+AV:''));a.playbackRate=slow?.75:S.rate/.85;curAudio=a;a.play().catch(()=>{});return}
   if(!('speechSynthesis' in window))return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
@@ -187,16 +187,53 @@ function speak(text,slow){
   speechSynthesis.speak(u);
 }
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function listenOnce(cb){
+const SRX={rec:false,lang:null};
+function listenOnce(lang,cb){
   if(!SR)return cb(null,'unsupported');
-  let done=false;const fin=(a,e)=>{if(!done){done=true;cb(a,e)}};
+  let done=false,r=null;
+  const tm=setTimeout(()=>{try{r&&r.stop()}catch(e){}},9000);
+  const fin=(a,e)=>{if(!done){done=true;clearTimeout(tm);cb(a,e)}};
   try{
-    const r=new SR();r.lang='af-ZA';r.interimResults=false;r.maxAlternatives=3;
+    r=new SR();r.lang=lang;r.interimResults=false;r.maxAlternatives=3;
     r.onresult=e=>fin([...e.results[0]].map(x=>x.transcript));
     r.onerror=e=>fin(null,e.error);
     r.onend=()=>fin(null,'no-speech');
     r.start();
   }catch(e){fin(null,'unsupported')}
+}
+function attemptListen(q,langs){
+  const lang=langs[0];
+  listenOnce(lang,(alts,err)=>{
+    if(!Q||Q.queue[Q.i]!==q||Q.fb)return;
+    if(err){
+      if((err==='language-not-supported'||err==='unsupported')&&langs.length>1){attemptListen(q,langs.slice(1));return}
+      if(err==='no-speech'||err==='aborted'){q.sp={s:'quiet'};render();return}
+      SRX.rec=true;q.sp={s:'rec'};render();return;
+    }
+    SRX.lang=lang;
+    const best=alts.reduce((a,b)=>sim(a,q.item[0])>=sim(b,q.item[0])?a:b);
+    if(sim(best,q.item[0])>=(lang==='af-ZA'?.72:.6)){answer(true,'I heard “'+esc(best)+'”. Great pronunciation!')}
+    else{q.sp={s:'miss',heard:best};render()}
+  });
+}
+let REC=null;
+function playUrl(u){try{const a=new Audio(u);a.play().catch(()=>{})}catch(e){}}
+function stopRec(){if(REC){const r=REC;REC=null;try{r.mr.onstop=()=>r.stream.getTracks().forEach(t=>t.stop());r.mr.stop()}catch(e){}}}
+async function toggleRec(q){
+  if(REC&&REC.mr.state==='recording'){REC.mr.stop();return}
+  try{
+    if(typeof MediaRecorder==='undefined')throw new Error('no recorder');
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr=new MediaRecorder(stream);const chunks=[];
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    mr.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());REC=null;
+      const url=URL.createObjectURL(new Blob(chunks,{type:mr.mimeType||'audio/mp4'}));
+      q.sp={s:'recdone',url};
+      if(Q&&Q.queue[Q.i]===q&&!Q.fb){render();playUrl(url)}
+    };
+    REC={mr,stream};mr.start();q.sp={s:'recording'};render();
+  }catch(e){q.sp={s:'norec'};render()}
 }
 
 /* ---------- views ---------- */
@@ -361,24 +398,26 @@ function quizView(){
     const m=q.m;
     const cls=(side,i)=>{if(m.done.includes(i))return 'gone';if(m.bad&&m.bad.some(b=>b.side===side&&b.i===i))return 'shake';if(m.sel&&m.sel.side===side&&m.sel.i===i)return 'sel';return ''};
     h+=`<p class="label">Match each word with its meaning</p><div class="mt"><div class="opts">${m.L.map(i=>`<button class="opt ${cls('L',i)}" data-act="mt" data-side="L" data-i="${i}" ${m.done.includes(i)||fb?'disabled':''}>${esc(q.items[i][0])}</button>`).join('')}</div><div class="opts">${m.R.map(i=>`<button class="opt ${cls('R',i)}" data-act="mt" data-side="R" data-i="${i}" ${m.done.includes(i)||fb?'disabled':''}>${esc(pic(q.items[i])&&i%2?pic(q.items[i]):q.items[i][1])}</button>`).join('')}</div></div>`;
-  }else if(q.t==='memory'){
-    if(!q.mm){
-      const cards=[];
-      q.items.forEach((it,i)=>{cards.push({pair:i,k:'a',txt:it[0]});cards.push({pair:i,k:'b',txt:pic(it)||it[1],emo:!!pic(it)})});
-      q.mm={cards:shuffle(cards),open:[],done:[],moves:0,lock:false};
-    }
-    const m=q.mm;
-    h+=`<p class="label">Memory match · find each word and its meaning (moves: ${m.moves})</p><div class="mem ${m.cards.length>12?'four':''}">${m.cards.map((c,i)=>{
-      const up=m.open.includes(i),dn=m.done.includes(i);
-      return `<button class="mcard ${dn?'done':up?'up':''}" data-act="mem" data-i="${i}" ${dn||fb?'disabled':''} aria-label="Card">${(up||dn)?(c.emo?`<span class="e">${c.txt}</span>`:esc(c.txt)):'?'}</button>`}).join('')}</div>`;
   }else if(q.t==='speak'){
     const sp=q.sp||{s:'idle'};
+    const recMode=!SR||SRX.rec||['rec','recording','recdone','norec'].includes(sp.s);
     h+=`<p class="label">Say it out loud</p><div class="prompt">${esc(af)}</div><div class="row" style="margin:-10px 0 14px">${spk(af)}${spk(af,true)}<span class="muted">${esc(en)}</span></div>`;
-    if(fb){}
-    else if(sp.s==='unsup'||!SR){
-      h+=`<div class="note">${sp.s==='unsup'?'Speech recognition isn\'t available for Afrikaans on this device or browser.':'This browser can\'t listen to Afrikaans.'} Play the word, say it aloud, and rate yourself.</div><button class="primary" data-act="selfok">I said it</button><button class="ghost" style="width:100%" data-act="skip">Skip</button>`;
-    }else{
-      h+=`<button class="micbtn ${sp.s==='listening'?'live':''}" data-act="mic" aria-label="Start listening">🎤</button><p style="text-align:center" class="muted">${sp.s==='listening'?'Listening…':sp.s==='miss'?'I heard “'+esc(sp.heard)+'”. Give it another go.':sp.s==='quiet'?'I didn\'t hear anything. Tap and try again.':'Tap the mic and say it'}</p>${sp.s==='miss'||sp.s==='quiet'?'<button class="ghost" style="width:100%" data-act="skip">Move on</button>':''}`;
+    if(!fb){
+      if(sp.s==='norec'||(recMode&&typeof MediaRecorder==='undefined')){
+        h+=`<div class="note">I cannot use the microphone here. Play the word, say it aloud, and rate yourself.</div><button class="primary" data-act="selfok">I said it</button><button class="ghost" style="width:100%" data-act="skip">Skip</button>`;
+      }else if(recMode){
+        const rec=sp.s==='recording';
+        h+=`<div class="note">${sp.s==='recdone'?'Play yourself back, then the model voice (🔊), and see how close you are.':'Your phone cannot check Afrikaans automatically, so record yourself and compare with the model voice.'}</div>
+         <button class="micbtn ${rec?'live':''}" data-act="mic" aria-label="${rec?'Stop recording':'Record'}">${rec?'⏹':'🎤'}</button>
+         <p style="text-align:center" class="muted">${rec?'Recording… tap to stop':sp.s==='recdone'?'Tap to record again':'Tap to record yourself'}</p>
+         ${sp.s==='recdone'?`<button class="secondary" data-act="playrec">▶ Hear yourself</button><button class="primary" style="margin-top:10px" data-act="selfok">That matched</button>`:''}
+         <button class="ghost" style="width:100%" data-act="skip">Skip</button>`;
+      }else{
+        h+=`<button class="micbtn ${sp.s==='listening'?'live':''}" data-act="mic" aria-label="Start listening">🎤</button>
+         <p style="text-align:center" class="muted">${sp.s==='listening'?'Listening…':sp.s==='miss'?'I heard “'+esc(sp.heard)+'”. Give it another go.':sp.s==='quiet'?"I didn't hear anything. Tap and try again.":'Tap the mic and say it'}</p>
+         ${SRX.lang==='nl-NL'?'<p class="muted small" style="text-align:center">Listening with a Dutch recogniser, which is close to Afrikaans.</p>':''}
+         ${sp.s==='miss'||sp.s==='quiet'?'<button class="secondary" data-act="userec">Record and compare instead</button><button class="ghost" style="width:100%" data-act="skip">Move on</button>':''}`;
+      }
     }
   }
   if(fb){
@@ -413,7 +452,6 @@ function gamesView(){
    ['daily','📅','Daily challenge','10 mixed questions, new every day. Pass for +50 XP.',dailyDone()?'Done today ✓':''],
    ['speed','⚡','Speed round','45 seconds. Answer as many as you can.',S.speedBest?'Best: '+S.speedBest:''],
    ['pic','🖼️','Picture challenge','Match the drawings to Afrikaans words.',''],
-   ['memory','🃏','Memory match','Flip cards to find word and meaning pairs.',''],
    ['build','🧩','Sentence builder','Tap the words into the right order.',''],
    ['spell','🔤','Spelling bee','Spell words from scrambled letters.','']];
   return `<div class="top"><h1 style="font-size:1.6rem">Games</h1></div>
@@ -567,7 +605,6 @@ function make(type,it,i){
   }
   return null;
 }
-const memoryQ=(items,n)=>({t:'memory',items:sample(items,Math.min(n||6,items.length))});
 function build(session){
   const items=shuffle(session.items);const out=[];
   if(session.kind==='lesson'){
@@ -580,13 +617,11 @@ function build(session){
     const take=(type,n,f)=>shuffle(items.filter(f)).slice(0,n).forEach((it,i)=>out.push(make(type,it,i)));
     take('listen',2,()=>true);take('spell',2,isSpell);take('dictate',1,()=>true);take('type',2,()=>true);take('blank',1,isPhrase);
     if(items.length>=5)out.push({t:'match',items:sample(items,5)});
-    if(items.length>=6)out.push(memoryQ(items,6));
     const ph=items.filter(i=>i[0].includes(' '));
     sample(ph.length>=2?ph:items,2).forEach(it=>out.push({t:'speak',item:it}));
   }else if(session.kind==='game'){
     const g=session.game;
-    if(g==='memory'){out.push(memoryQ(items,6));const rest=items.slice(6);out.push(memoryQ(rest.length>=6?rest:items,6))}
-    else{const n=g==='pic'?10:8;items.slice(0,n).forEach((it,i)=>out.push(make(g,it,i)))}
+    const n=g==='pic'?10:8;items.slice(0,n).forEach((it,i)=>out.push(make(g,it,i)));
   }else{
     const n=Math.min(items.length,session.kind==='test'?12:10);
     const cyc=['mc','listen','pic','type','spell','build','dictate','blank'];
@@ -610,7 +645,7 @@ function answer(ok,note){
   if(!q.retry){
     if(ok)Q.right++;
     bump(q,ok);
-    if(!ok&&q.t!=='speak'&&q.t!=='memory'){
+    if(!ok&&q.t!=='speak'){
       if(q.item)Q.weak.add(q.item[0]);
       Q.queue.push(Object.assign({},q,{retry:true,opts:null,picked:null,m:null,sp:null,val:'',played:false,bank:null,placed:null,mm:null,bi:undefined,word:undefined}));
     }
@@ -620,7 +655,7 @@ function answer(ok,note){
   save();render();
 }
 function advance(){
-  Q.fb=null;Q.i++;
+  stopRec();Q.fb=null;Q.i++;
   if(Q.i>=Q.queue.length)finish();else render();
 }
 function touchStreak(){
@@ -667,7 +702,7 @@ const ACT={
     if(g==='speed')return startSpeed();
     if(g==='daily')return ACT.daily();
     if(g==='review')return ACT.review();
-    const meta={pic:{f:pic,min:5,title:'Picture challenge'},spell:{f:isSpell,min:5,title:'Spelling bee'},build:{f:isPhrase,min:5,title:'Sentence builder'},memory:{f:()=>true,min:8,title:'Memory match'}}[g];
+    const meta={pic:{f:pic,min:5,title:'Picture challenge'},spell:{f:isSpell,min:5,title:'Spelling bee'},build:{f:isPhrase,min:5,title:'Sentence builder'}}[g];
     let pool=learned().map(k=>BYAF[k]).filter(meta.f);
     if(pool.length<meta.min)pool=ALL.filter(meta.f);
     startSession({kind:'game',game:g,id:g,title:meta.title,items:pool});
@@ -686,22 +721,6 @@ const ACT={
     const parts=q.placed.map(id=>q.bank.find(b=>b.id===id).t);
     const ok=q.t==='build'?norm(parts.join(' '))===norm(q.item[0]):parts.join('').toLowerCase()===q.item[0].toLowerCase();
     answer(ok,ok?'':'Answer: <b>'+esc(q.item[0])+'</b><br><span class="small">We\'ll try this one again.</span>');
-  },
-  mem:t=>{
-    const q=Q.queue[Q.i],m=q.mm;if(Q.fb||m.lock)return;
-    const i=+t.dataset.i;if(m.open.includes(i)||m.done.includes(i))return;
-    m.open.push(i);const c=m.cards[i];if(c.k==='a')speak(c.txt);
-    if(m.open.length<2){render();return}
-    m.moves++;
-    const [x,y]=m.open.map(k=>m.cards[k]);
-    if(x.pair===y.pair){
-      m.done.push(...m.open);m.open=[];
-      if(m.done.length===m.cards.length){answer(m.moves<=q.items.length*2,'Finished in '+m.moves+' moves.');return}
-      render();
-    }else{
-      m.lock=true;render();
-      setTimeout(()=>{m.open=[];m.lock=false;if(Q&&Q.queue[Q.i]===q&&V.name==='quiz')render()},900);
-    }
   },
   tab:t=>{V={name:t.dataset.t};render()},
   home:()=>{Q=null;L=null;V={name:'home'};render()},
@@ -750,16 +769,15 @@ const ACT={
     }else{m.err++;m.bad=[a,{side,i}];render();setTimeout(()=>{m.bad=null;if(Q&&Q.queue[Q.i]===q)render()},550)}
   },
   mic:()=>{
-    const q=Q.queue[Q.i];if(Q.fb||(q.sp&&q.sp.s==='listening'))return;
+    const q=Q.queue[Q.i];if(Q.fb)return;
+    const sp=q.sp||{s:'idle'};
+    if(sp.s==='listening')return;
+    if(!SR||SRX.rec||['rec','recording','recdone','norec'].includes(sp.s))return toggleRec(q);
     q.sp={s:'listening'};render();
-    listenOnce((alts,err)=>{
-      if(!Q||Q.queue[Q.i]!==q||Q.fb)return;
-      if(err){q.sp={s:(err==='no-speech'||err==='aborted')?'quiet':'unsup'};render();return}
-      const best=alts.reduce((a,b)=>sim(a,q.item[0])>=sim(b,q.item[0])?a:b);
-      if(sim(best,q.item[0])>=.72){answer(true,'I heard “'+esc(best)+'”. Great pronunciation!')}
-      else{q.sp={s:'miss',heard:best};render()}
-    });
+    attemptListen(q,SRX.lang?[SRX.lang]:['af-ZA','nl-NL']);
   },
+  userec:()=>{const q=Q.queue[Q.i];SRX.rec=true;q.sp={s:'rec'};render()},
+  playrec:()=>{const q=Q.queue[Q.i];if(q.sp&&q.sp.url)playUrl(q.sp.url)},
   selfok:()=>answer(true,'Saying it aloud is the best practice there is.'),
   skip:()=>{Q.total--;if(Q.total<1)Q.total=1;advance()},
   next:()=>advance(),

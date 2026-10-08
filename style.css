@@ -121,12 +121,6 @@ nav.tabs button.on{color:var(--brand)}
 .tile.no{border-color:var(--bad);background:var(--bad-bg)}
 .blank{display:inline-block;border-bottom:4px solid var(--accent);color:transparent;margin:0 2px}
 .blank.rev{color:var(--ink);border-color:var(--good)}
-.mem{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mem.four{grid-template-columns:repeat(4,1fr)}
-.mcard{aspect-ratio:1/1.05;border-radius:14px;background:var(--brand);color:var(--on-brand);font-weight:800;font-size:1rem;display:grid;place-items:center;padding:4px;text-align:center;overflow-wrap:anywhere;border:2px solid var(--brand)}
-.mcard.up{background:var(--surface);color:var(--ink);border-color:var(--accent)}
-.mcard.done{background:var(--good-bg);color:var(--ink);border-color:var(--good);opacity:.7}
-.mcard .e{font-size:2rem}
 .gm{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 0;border-bottom:1px solid var(--line)}
 .gm .node{margin-left:0}
 .fbspace{height:130px}
